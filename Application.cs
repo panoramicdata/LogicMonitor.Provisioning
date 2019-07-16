@@ -1,6 +1,5 @@
 using LogicMonitor.Api;
 using LogicMonitor.Api.Collectors;
-using LogicMonitor.Api.Dashboards;
 using LogicMonitor.Api.Devices;
 using LogicMonitor.Api.Filters;
 using LogicMonitor.Api.Netscans;
@@ -11,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LogicMonitor.Provisioning
@@ -68,12 +68,12 @@ namespace LogicMonitor.Provisioning
 
 			try
 			{
-				await ProcessDevicesAsync(_portalClient, _config.Mode, _config.Devices, _config.Customer, _logger).ConfigureAwait(false);
-				await ProcessWebsitesAsync(_portalClient, _config.Mode, _config.Websites, _config.Customer, _logger).ConfigureAwait(false);
-				await ProcessNetscansAsync(_portalClient, _config.Mode, _config.Netscans, _config.Customer, _logger).ConfigureAwait(false);
-				await ProcessDashboardsAsync(_portalClient, _config.Mode, _config.Dashboards, _config.Customer, _logger).ConfigureAwait(false);
-				await ProcessReportsAsync(_portalClient, _config.Mode, _config.Reports, _config.Customer, _logger).ConfigureAwait(false);
-				await ProcessCollectorsAsync(_portalClient, _config.Mode, _config.Collectors, _config.Customer, _logger).ConfigureAwait(false);
+				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Devices, _config.Customer, _logger).ConfigureAwait(false);
+				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Websites, _config.Customer, _logger).ConfigureAwait(false);
+				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Netscans, _config.Customer, _logger).ConfigureAwait(false);
+				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Dashboards, _config.Customer, _logger).ConfigureAwait(false);
+				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Reports, _config.Customer, _logger).ConfigureAwait(false);
+				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Collectors, _config.Customer, _logger).ConfigureAwait(false);
 			}
 			catch (Exception e)
 			{
@@ -81,23 +81,31 @@ namespace LogicMonitor.Provisioning
 			}
 		}
 
-		private static async Task ProcessCollectorsAsync(PortalClient portalClient, Mode mode, Collectors collectors, Customer customer, ILogger<Application> logger)
+		private static async Task ProcessStructureAsync<TGroup, TItem>(
+			PortalClient portalClient,
+			Mode mode,
+			Structure<TGroup, TItem> structure,
+			Customer customer,
+			ILogger<Application> logger) where TGroup : IHasEndpoint, new()
 		{
-			if (!collectors.Enabled)
+			if (!structure.Enabled)
 			{
-				logger.LogInformation("Not processing collectors, as they are disabled.");
+				logger.LogInformation($"Not processing {typeof(TGroup)}, as they are disabled.");
 				return;
 			}
 
-			// Get any existing CollectorGroup
-			var existingCollectorGroup = await portalClient
-				.GetAllAsync(new Filter<CollectorGroup>
-				{
-					FilterItems = new List<FilterItem<CollectorGroup>>
+			// Get any existing Groups
+			var filter = new Filter<TGroup>
+			{
+				FilterItems = new List<FilterItem<TGroup>>
 					{
-						new Eq<CollectorGroup>(nameof(CollectorGroup.Name), customer.Name)
+						new Eq<TGroup>(nameof(NamedEntity.Name), customer.Name)
 					}
-				})
+			};
+			var cancellationToken = CancellationToken.None;
+
+			var existingCollectorGroup = await portalClient
+				.GetAllAsync(filter, cancellationToken)
 				.ConfigureAwait(false);
 
 			switch (mode)
@@ -146,144 +154,58 @@ namespace LogicMonitor.Provisioning
 			}
 		}
 
-		private static async Task ProcessDashboardsAsync(
+		private static async Task EnsureStructureIntactAsync<TGroup, TItem>(
 			PortalClient portalClient,
+			Structure<TGroup, TItem> structure,
 			Mode mode,
-			StructureSpecification<DashboardConfig> dashboards,
-			Customer customer,
-			ILogger<Application> logger)
+			Customer customer) where TGroup : IHasEndpoint, new()
 		{
-			if (!dashboards.Enabled)
-			{
-				logger.LogInformation("Not processing dashboards, as they are disabled.");
-				return;
-			}
-
-			// Get any existing DashboardGroup
-			var existingDashboardGroup = await portalClient
-				.GetAllAsync(new Filter<DashboardGroup>
-				{
-					FilterItems = new List<FilterItem<DashboardGroup>>
-					{
-						new Eq<DashboardGroup>(nameof(DashboardGroup.Name), $"{dashboards.Root}/{customer.Name}")
-					}
-				})
-				.ConfigureAwait(false);
-
+			// Check supported modes
 			switch (mode)
 			{
 				case Mode.Create:
-					throw new NotImplementedException();
-				case Mode.Delete:
-					throw new NotImplementedException();
+					break;
 				default:
-					throw new ConfigurationException($"Unexpected mode: {mode}");
-			}
-		}
-
-		private static async Task ProcessNetscansAsync(
-			PortalClient portalClient,
-			Mode mode,
-			Netscans netscans,
-			Customer customer,
-			ILogger<Application> logger)
-		{
-			if (!netscans.Enabled)
-			{
-				logger.LogInformation("Not processing netscans, as they are disabled.");
-				return;
+					throw new NotSupportedException($"Mode {mode} not yet supported.");
 			}
 
-			// Get any existing NetscanGroup
-			var existingNetscanGroup = await portalClient
-				.GetAllAsync(new Filter<NetscanGroup>
-				{
-					FilterItems = new List<FilterItem<NetscanGroup>>
-					{
-						new Eq<NetscanGroup>(nameof(NetscanGroup.Name), customer.Name)
-					}
-				})
-				.ConfigureAwait(false);
-
-			switch (mode)
+			string fullPathPropertyName = null;
+			switch (typeof(TGroup).Name)
 			{
-				case Mode.Create:
-					throw new NotImplementedException();
-				case Mode.Delete:
-					throw new NotImplementedException();
-				default:
-					throw new ConfigurationException($"Unexpected mode: {mode}");
-			}
-		}
-
-		private static async Task ProcessWebsitesAsync(
-			PortalClient portalClient,
-			Mode mode,
-			StructureSpecification<WebsiteConfig> websites,
-			Customer customer,
-			ILogger<Application> logger)
-		{
-			if (!websites.Enabled)
-			{
-				logger.LogInformation("Not processing websites, as they are disabled.");
-				return;
-			}
-
-			// Get any existing WebsiteGroup
-			var existingWebsiteGroup = await portalClient
-				.GetAllAsync(new Filter<WebsiteGroup>
-				{
-					FilterItems = new List<FilterItem<WebsiteGroup>>
-					{
-						new Eq<WebsiteGroup>(nameof(WebsiteGroup.Name), $"{websites.Root}/{customer.Name}")
-					}
-				})
-				.ConfigureAwait(false);
-
-			switch (mode)
-			{
-				case Mode.Create:
-					throw new NotImplementedException();
-				case Mode.Delete:
-					throw new NotImplementedException();
-				default:
-					throw new ConfigurationException($"Unexpected mode: {mode}");
-			}
-		}
-
-		private static async Task ProcessDevicesAsync(
-			PortalClient portalClient,
-			Mode mode,
-			StructureSpecification<DeviceConfig> devices,
-			Customer customer,
-			ILogger<Application> logger)
-		{
-			if (!devices.Enabled)
-			{
-				logger.LogInformation("Not processing devices, as they are disabled.");
-				return;
+				case nameof(DeviceGroup):
+					fullPathPropertyName = nameof(DeviceGroup.FullPath);
+					break;
+				case nameof(WebsiteGroup):
+					fullPathPropertyName = nameof(WebsiteGroup.FullPath);
+					break;
+				case nameof(CollectorGroup):
+					fullPathPropertyName = nameof(CollectorGroup.Name);
+					break;
+				case nameof(NetscanGroup):
+					fullPathPropertyName = nameof(NetscanGroup.Name);
+					break;
 			}
 
 			// Get any existing DeviceGroup
-			var existingDeviceGroup = await portalClient
+			var existingGroup = await portalClient
 				.GetAllAsync(new Filter<DeviceGroup>
 				{
 					FilterItems = new List<FilterItem<DeviceGroup>>
 					{
-						new Eq<DeviceGroup>(nameof(DeviceGroup.Name), $"{devices.Root}/{customer.Name}")
+						new Eq<DeviceGroup>(fullPathPropertyName, $"{structure.Root}/")
 					}
 				})
 				.ConfigureAwait(false);
 
-			switch (mode)
+			// TODO - Create it if it doesn't exist
+			if (existingGroup == null)
 			{
-				case Mode.Create:
-					throw new NotImplementedException();
-				case Mode.Delete:
-					throw new NotImplementedException();
-				default:
-					throw new ConfigurationException($"Unexpected mode: {mode}");
+
 			}
+
+			// Iterate all the child groups
+
+			// Iterate all the items
 		}
 	}
 }

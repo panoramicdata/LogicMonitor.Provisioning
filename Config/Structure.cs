@@ -2,10 +2,11 @@ using System.Collections.Generic;
 
 namespace LogicMonitor.Provisioning.Config
 {
-	public class Structure<T>
+	public class Structure<TGroup, TItem>
 	{
-		public List<Structure<T>> Groups { get; set; }
-
-		public List<T> Items { get; set; }
+		public string Root { get; set; }
+		public List<Structure<TGroup, TItem>> Groups { get; set; }
+		public List<TItem> Items { get; set; }
+		public bool Enabled { get; set; }
 	}
 }

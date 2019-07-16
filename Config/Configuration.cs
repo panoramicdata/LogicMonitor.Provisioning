@@ -1,3 +1,10 @@
+using LogicMonitor.Api.Collectors;
+using LogicMonitor.Api.Dashboards;
+using LogicMonitor.Api.Devices;
+using LogicMonitor.Api.Netscans;
+using LogicMonitor.Api.Reports;
+using LogicMonitor.Api.Websites;
+
 namespace LogicMonitor.Provisioning.Config
 {
 	/// <summary>
@@ -12,11 +19,11 @@ namespace LogicMonitor.Provisioning.Config
 		public LogicMonitorCredentials LogicMonitorCredentials { get; set; }
 		public Mode Mode { get; set; }
 		public Customer Customer { get; set; }
-		public Reports Reports { get; set; }
-		public Netscans Netscans { get; set; }
-		public Collectors Collectors { get; set; }
-		public StructureSpecification<DeviceConfig> Devices { get; set; }
-		public StructureSpecification<WebsiteConfig> Websites { get; set; }
-		public StructureSpecification<DashboardConfig> Dashboards { get; set; }
+		public Structure<ReportGroup, Report> Reports { get; set; }
+		public Structure<NetscanGroup, Netscan> Netscans { get; set; }
+		public Structure<CollectorGroup, Collector> Collectors { get; set; }
+		public Structure<DeviceGroup, Device> Devices { get; set; }
+		public Structure<WebsiteGroup, Website> Websites { get; set; }
+		public Structure<DashboardGroup, Dashboard> Dashboards { get; set; }
 	}
 }
