@@ -259,6 +259,11 @@ namespace LogicMonitor.Provisioning
 
 		private static string Substitute(string inputString, List<Property> variables)
 		{
+			if (inputString == null)
+			{
+				return null;
+			}
+
 			foreach (var variable in variables)
 			{
 				inputString = inputString.Replace($"{{{variable.Name}}}", variable.Value);
@@ -307,7 +312,7 @@ namespace LogicMonitor.Provisioning
 					{
 						ParentId = parentGroup?.Id.ToString() ?? "1",
 						Name = name,
-						AppliesTo = structure.AppliesTo,
+						AppliesTo = Substitute(structure.AppliesTo, variables),
 						CustomProperties = properties
 					} as CreationDto<TGroup>;
 					break;
