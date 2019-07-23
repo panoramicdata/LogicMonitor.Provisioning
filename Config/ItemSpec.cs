@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-
 namespace LogicMonitor.Provisioning.Config
 {
-	public class Customer
+	public class ItemSpec
 	{
 		public string Name { get; set; }
+		public int? CloneFromId { get; set; }
 		public string Description { get; set; }
-		public List<Property> Properties { get; set; }
 	}
 }
