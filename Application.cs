@@ -211,8 +211,8 @@ namespace LogicMonitor.Provisioning
 										.CloneAsync(item.CloneFromId.Value,
 										new DashboardCloneRequest
 										{
-											Name = item.Name,
-											Description = item.Description,
+											Name = Substitute(item.Name, variables),
+											Description = Substitute(item.Description, variables),
 											DashboardGroupId = currentGroup.Id,
 											WidgetsConfig = originalDashboard.WidgetsConfig,
 											WidgetsOrder = originalDashboard.WidgetsOrder
