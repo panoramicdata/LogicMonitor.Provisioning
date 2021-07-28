@@ -1,8 +1,9 @@
 using LogicMonitor.Provisioning.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace LogicMonitor.Provisioning
@@ -13,14 +14,33 @@ namespace LogicMonitor.Provisioning
 		{
 			try
 			{
-				// Create the service collection passing in the configuration
-				var serviceCollection = new ServiceCollection();
-				var configurationRoot = BuildConfig(args);
-				ConfigureServices(serviceCollection, configurationRoot);
-				var serviceProvider = serviceCollection.BuildServiceProvider();
+				var builder = new HostBuilder()
+					.ConfigureAppConfiguration(config =>
+					{
+						config.AddJsonFile("appsettings.json", optional: true);
+						config.AddEnvironmentVariables();
 
-				await serviceProvider.GetService<Application>()!
-					.Run()
+						if (args != null)
+						{
+							config.AddCommandLine(args);
+						}
+					})
+					.ConfigureServices((hostContext, services) =>
+					{
+						services.AddOptions();
+						services.Configure<Configuration>(hostContext.Configuration.GetSection("Configuration"));
+
+						services.AddSingleton<IHostedService, Application>();
+					})
+					.ConfigureLogging((hostContext, loggingBuilder) =>
+						loggingBuilder
+						.ClearProviders()
+						.AddConfiguration(hostContext.Configuration.GetSection("Logging"))
+						.AddConsole()
+					);
+
+				await builder
+					.RunConsoleAsync()
 					.ConfigureAwait(false);
 				return 0;
 			}
@@ -30,32 +50,5 @@ namespace LogicMonitor.Provisioning
 				return 1;
 			}
 		}
-
-		private static IConfigurationRoot BuildConfig(string[] args)
-		{
-			var appsettingsFilename = "appsettings.json";
-			// If specifying any command line arguments, the first argument must be the path to the appsettings.json file ConfigFile: xxx
-			if (args.Length > 0)
-			{
-				appsettingsFilename = args[0];
-			}
-
-			// Convert appsettingsFilename to absolute path for the ConfigurationBuilder to be able to find it
-			appsettingsFilename = Path.GetFullPath(appsettingsFilename);
-
-			return new ConfigurationBuilder()
-				.SetBasePath(Directory.GetCurrentDirectory())
-				.AddJsonFile(appsettingsFilename, false, false)
-				.Build();
-		}
-
-		private static void ConfigureServices(
-			IServiceCollection services,
-			IConfiguration configuration) =>
-			services
-				.AddLogging()
-				.AddOptions()
-				.Configure<Configuration>(c => configuration.GetSection("Configuration").Bind(c))
-				.AddTransient<Application>();
 	}
 }

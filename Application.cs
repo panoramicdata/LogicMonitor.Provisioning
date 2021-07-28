@@ -7,6 +7,7 @@ using LogicMonitor.Api.Netscans;
 using LogicMonitor.Api.Reports;
 using LogicMonitor.Api.Websites;
 using LogicMonitor.Provisioning.Config;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -20,7 +21,7 @@ namespace LogicMonitor.Provisioning
 	/// <summary>
 	/// The main application
 	/// </summary>
-	internal class Application
+	internal class Application : IHostedService
 	{
 		/// <summary>
 		/// Configuration
@@ -36,6 +37,16 @@ namespace LogicMonitor.Provisioning
 		/// The logger
 		/// </summary>
 		private readonly ILogger<Application> _logger;
+
+		/// <summary>
+		/// The CancellationTokenSource
+		/// </summary>
+		private CancellationTokenSource? TokenSource { get; set; }
+
+		/// <summary>
+		/// The running task.
+		/// </summary>
+		private Task? Task { get; set; }
 
 		/// <summary>
 		/// Constructor
@@ -67,16 +78,13 @@ namespace LogicMonitor.Provisioning
 			_logger = logger;
 		}
 
-		public async Task Run()
+		public async Task RunAsync(CancellationToken cancellationToken)
 		{
 			// Use _logger for logging
 			_logger.LogInformation($"Application start.  Mode: {_config.Mode}");
 
 			try
 			{
-				// TODO - Add Control+C cancellation support
-				var cancellationToken = CancellationToken.None;
-
 				// Collectors
 				await ProcessStructureAsync(
 					_logicMonitorClient,
@@ -148,6 +156,30 @@ namespace LogicMonitor.Provisioning
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
+
+				// Roles
+				await ProcessStructureAsync(
+					_logicMonitorClient,
+					_config.Mode,
+					_config.Roles,
+					_config.Variables,
+					_config.Properties,
+					null,
+					_logger,
+					cancellationToken)
+					.ConfigureAwait(false);
+
+				// Users
+				await ProcessStructureAsync(
+					_logicMonitorClient,
+					_config.Mode,
+					_config.Users,
+					_config.Variables,
+					_config.Properties,
+					null,
+					_logger,
+					cancellationToken)
+					.ConfigureAwait(false);
 			}
 			catch (Exception e)
 			{
@@ -204,9 +236,10 @@ namespace LogicMonitor.Provisioning
 					cancellationToken
 				)
 				.ConfigureAwait(false);
+
 			var currentGroup = currentGroups
 				.SingleOrDefault();
-			// existingGroup is now set to either the existing group, or null
+			// currentGroup is now set to either the existing group, or null
 
 			// What mode are we in?
 			switch (mode)
@@ -476,5 +509,26 @@ namespace LogicMonitor.Provisioning
 		private static Task DeleteAsync<TItem>(LogicMonitorClient logicMonitorClient, int id)
 			where TItem : IdentifiedItem, IHasEndpoint, new()
 			=> logicMonitorClient.DeleteAsync<TItem>(id);
+
+		public Task StartAsync(CancellationToken cancellationToken)
+		{
+			if (Task is not null)
+			{
+				throw new InvalidOperationException("Task is already running.");
+			}
+			TokenSource = new CancellationTokenSource();
+			Task = RunAsync(TokenSource.Token);
+			return Task.CompletedTask;
+		}
+
+		public async Task StopAsync(CancellationToken cancellationToken)
+		{
+			if (TokenSource is null || Task is null)
+			{
+				throw new InvalidOperationException("Task is not running.");
+			}
+			TokenSource.Cancel();
+			await Task.ConfigureAwait(false);
+		}
 	}
 }
