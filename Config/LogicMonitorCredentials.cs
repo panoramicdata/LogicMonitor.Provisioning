@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace LogicMonitor.Provisioning.Config
 {
@@ -14,19 +12,19 @@ namespace LogicMonitor.Provisioning.Config
 		/// For example, if your URL is https://example.logicmonitor.com/
 		/// ... set to "example"
 		/// </summary>
-		public string Account { get; set; }
+		public string Account { get; set; } = string.Empty;
 
 		/// <summary>
 		/// The access Id.
 		/// See https://www.logicmonitor.com/support/settings/users-and-roles/api-tokens/
 		/// </summary>
-		public string AccessId { get; set; }
+		public string AccessId { get; set; } = string.Empty;
 
 		/// <summary>
 		/// The access key.
 		/// See https://www.logicmonitor.com/support/settings/users-and-roles/api-tokens/
 		/// </summary>
-		public string AccessKey { get; set; }
+		public string AccessKey { get; set; } = string.Empty;
 
 		/// <summary>
 		/// Ensures that all values are set and are of the expected length

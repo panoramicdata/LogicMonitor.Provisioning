@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+using LogicMonitor.Provisioning.Config;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -19,8 +19,9 @@ namespace LogicMonitor.Provisioning
 				ConfigureServices(serviceCollection, configurationRoot);
 				var serviceProvider = serviceCollection.BuildServiceProvider();
 
-				var application = serviceProvider.GetService<Application>();
-				await application.Run().ConfigureAwait(false);
+				await serviceProvider.GetService<Application>()!
+					.Run()
+					.ConfigureAwait(false);
 				return 0;
 			}
 			catch (Exception e)
@@ -48,16 +49,13 @@ namespace LogicMonitor.Provisioning
 				.Build();
 		}
 
-		private static void ConfigureServices(IServiceCollection services, IConfiguration configuration) =>
-			// Add logging
-			services.AddSingleton(
-				new LoggerFactory()
-					.AddConsole()
-					.AddDebug(LogLevel.Debug)
-			)
-			.AddLogging()
-			.AddOptions()
-			.Configure<Config.Configuration>(c => configuration.GetSection("Configuration").Bind(c))
-			.AddTransient<Application>();
+		private static void ConfigureServices(
+			IServiceCollection services,
+			IConfiguration configuration) =>
+			services
+				.AddLogging()
+				.AddOptions()
+				.Configure<Configuration>(c => configuration.GetSection("Configuration").Bind(c))
+				.AddTransient<Application>();
 	}
 }

@@ -20,7 +20,8 @@ namespace LogicMonitor.Provisioning.Config
 		/// Constructor
 		/// </summary>
 		/// <param name="issues">The issues</param>
-		public ConfigurationException(List<ConfigurationIssue> issues) => Issues = issues.AsReadOnly();
+		public ConfigurationException(List<ConfigurationIssue> issues)
+			=> Issues = issues.AsReadOnly();
 
 		public ConfigurationException(string message) : base(message)
 		{
@@ -37,8 +38,7 @@ namespace LogicMonitor.Provisioning.Config
 		/// <summary>
 		/// The issues
 		/// </summary>
-		/// <returns></returns>
-		public ReadOnlyCollection<ConfigurationIssue> Issues { get; }
+		public ReadOnlyCollection<ConfigurationIssue> Issues { get; } = new List<ConfigurationIssue>().AsReadOnly();
 
 		/// <inheritdoc />
 		public override string ToString() => $"Configuration issues:\r\n{Issues.Select(i => i.Message + "\r\n")}";
