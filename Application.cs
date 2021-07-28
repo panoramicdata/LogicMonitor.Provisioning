@@ -28,9 +28,9 @@ namespace LogicMonitor.Provisioning
 		private readonly Configuration _config;
 
 		/// <summary>
-		/// The PortalClient to use for LogicMonitor interaction
+		/// The client to use for LogicMonitor interaction
 		/// </summary>
-		private readonly PortalClient _portalClient;
+		private readonly LogicMonitorClient _logicMonitorClient;
 
 		/// <summary>
 		/// The logger
@@ -53,10 +53,14 @@ namespace LogicMonitor.Provisioning
 			_config.LogicMonitorCredentials.Validate();
 
 			// Create a portal client
-			_portalClient = new PortalClient(
-				_config.LogicMonitorCredentials.Account,
-				_config.LogicMonitorCredentials.AccessId,
-				_config.LogicMonitorCredentials.AccessKey
+			_logicMonitorClient = new LogicMonitorClient(
+				new LogicMonitorClientOptions
+				{
+					Account = _config.LogicMonitorCredentials.Account,
+					AccessId = _config.LogicMonitorCredentials.AccessId,
+					AccessKey = _config.LogicMonitorCredentials.AccessKey,
+					Logger = logger
+				}
 			);
 
 			// Create a logger
@@ -72,12 +76,12 @@ namespace LogicMonitor.Provisioning
 			{
 				// TODO - Add Control+C cancellation support
 				var cancellationToken = CancellationToken.None;
-				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Collectors, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
-				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Netscans, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
-				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Reports, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
-				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Dashboards, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
-				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Devices, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
-				await ProcessStructureAsync(_portalClient, _config.Mode, _config.Websites, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
+				await ProcessStructureAsync(_logicMonitorClient, _config.Mode, _config.Collectors, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
+				await ProcessStructureAsync(_logicMonitorClient, _config.Mode, _config.Netscans, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
+				await ProcessStructureAsync(_logicMonitorClient, _config.Mode, _config.Reports, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
+				await ProcessStructureAsync(_logicMonitorClient, _config.Mode, _config.Dashboards, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
+				await ProcessStructureAsync(_logicMonitorClient, _config.Mode, _config.Devices, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
+				await ProcessStructureAsync(_logicMonitorClient, _config.Mode, _config.Websites, _config.Variables, _config.Properties, null, _logger, cancellationToken).ConfigureAwait(false);
 			}
 			catch (Exception e)
 			{
@@ -86,7 +90,7 @@ namespace LogicMonitor.Provisioning
 		}
 
 		private static async Task ProcessStructureAsync<TGroup, TItem>(
-			PortalClient portalClient,
+			LogicMonitorClient logicMonitorClient,
 			Mode mode,
 			Structure<TGroup, TItem> structure,
 			List<Property> variables,
@@ -124,7 +128,7 @@ namespace LogicMonitor.Provisioning
 					filterItems.Add(new Eq<TGroup>(nameof(WebsiteGroup.ParentId), parentGroup?.Id ?? 1));
 					break;
 			}
-			var currentGroup = (await portalClient
+			var currentGroup = (await logicMonitorClient
 				.GetAllAsync(new Filter<TGroup>
 				{
 					FilterItems = filterItems
@@ -150,7 +154,7 @@ namespace LogicMonitor.Provisioning
 						?? Enumerable.Empty<Structure<TGroup, TItem>>())
 					{
 						await ProcessStructureAsync(
-							portalClient,
+							logicMonitorClient,
 							mode,
 							childStructure,
 							variables,
@@ -162,11 +166,11 @@ namespace LogicMonitor.Provisioning
 					}
 
 					// Delete child nodes
-					await DeleteChildNodesAsync<TGroup, TItem>(portalClient, currentGroup)
+					await DeleteChildNodesAsync<TGroup, TItem>(logicMonitorClient, currentGroup)
 						.ConfigureAwait(false);
 
 					// Try to delete this node
-					await DeleteAsync<TGroup>(portalClient, currentGroup.Id)
+					await DeleteAsync<TGroup>(logicMonitorClient, currentGroup.Id)
 						.ConfigureAwait(false);
 
 					return;
@@ -177,7 +181,7 @@ namespace LogicMonitor.Provisioning
 					{
 						// No.  We need to create one.
 						currentGroup = await CreateGroupAsync<TGroup, TItem>(
-							portalClient,
+							logicMonitorClient,
 							parentGroup,
 							structure,
 							variables,
@@ -203,11 +207,11 @@ namespace LogicMonitor.Provisioning
 										throw new ConfigurationException($"Creating items of type '{typeof(TItem).Name}' requires that the CloneFromId property is set.");
 									}
 
-									var originalDashboard = await portalClient
+									var originalDashboard = await logicMonitorClient
 										.GetAsync<Dashboard>(item.CloneFromId.Value, cancellationToken)
 										.ConfigureAwait(false);
 
-									var newDashboard = await portalClient
+									var newDashboard = await logicMonitorClient
 										.CloneAsync(item.CloneFromId.Value,
 										new DashboardCloneRequest
 										{
@@ -231,7 +235,7 @@ namespace LogicMonitor.Provisioning
 						?? Enumerable.Empty<Structure<TGroup, TItem>>())
 					{
 						await ProcessStructureAsync(
-							portalClient,
+							logicMonitorClient,
 							mode,
 							childStructure,
 							variables,
@@ -255,7 +259,7 @@ namespace LogicMonitor.Provisioning
 			Structure<TGroup, TItem> structure,
 			List<Property> variables,
 			List<Property> properties)
-			=> structure.ApplyProperties ? properties.Select(p => new Property { Name = p.Name, Value = Substitute(p.Value, variables) }).ToList() : null;
+			=> structure.ApplyProperties ? properties.ConvertAll(p => new Property { Name = p.Name, Value = Substitute(p.Value, variables) }): null;
 
 		private static string Substitute(string inputString, List<Property> variables)
 		{
@@ -272,7 +276,7 @@ namespace LogicMonitor.Provisioning
 		}
 
 		private static async Task<TGroup> CreateGroupAsync<TGroup, TItem>(
-			PortalClient portalClient,
+			LogicMonitorClient portalClient,
 			TGroup parentGroup,
 			Structure<TGroup, TItem> structure,
 			List<Property> variables,
@@ -283,129 +287,100 @@ namespace LogicMonitor.Provisioning
 			var name = Substitute(structure.Name, variables);
 			var properties = structure.ApplyProperties
 				? originalProperties
-					.Select(p => new Property
+					.ConvertAll(p => new Property
 					{
 						Name = p.Name,
 						Value = Substitute(p.Value, variables)
 					})
-					.ToList()
 				: null;
 			var groupTypeName = typeof(TGroup).Name;
-			CreationDto<TGroup> creationDto;
-			switch (groupTypeName)
+			var creationDto = groupTypeName switch
 			{
-				case nameof(CollectorGroup):
-					creationDto = new CollectorGroupCreationDto
-					{
-						Name = name
-					} as CreationDto<TGroup>;
-					break;
-				case nameof(DashboardGroup):
-					creationDto = new DashboardGroupCreationDto
-					{
-						ParentId = parentGroup?.Id.ToString() ?? "1",
-						Name = name
-					} as CreationDto<TGroup>;
-					break;
-				case nameof(DeviceGroup):
-					creationDto = new DeviceGroupCreationDto
-					{
-						ParentId = parentGroup?.Id.ToString() ?? "1",
-						Name = name,
-						AppliesTo = Substitute(structure.AppliesTo, variables),
-						CustomProperties = properties
-					} as CreationDto<TGroup>;
-					break;
-				case nameof(NetscanGroup):
-					creationDto = new NetscanGroupCreationDto
-					{
-						Name = name
-					} as CreationDto<TGroup>;
-					break;
-				case nameof(ReportGroup):
-					creationDto = new ReportGroupCreationDto
-					{
-						Name = name
-					} as CreationDto<TGroup>;
-					break;
-				case nameof(WebsiteGroup):
-					creationDto = new WebsiteGroupCreationDto
-					{
-						ParentId = parentGroup?.Id.ToString() ?? "1",
-						Name = name,
-						Properties = properties
-					} as CreationDto<TGroup>;
-					break;
-				default:
-					throw new NotSupportedException($"Creating {groupTypeName}s not supported.");
-			}
+				nameof(CollectorGroup) => new CollectorGroupCreationDto
+				{
+					Name = name
+				} as CreationDto<TGroup>,
+				nameof(DashboardGroup) => new DashboardGroupCreationDto
+				{
+					ParentId = parentGroup?.Id.ToString() ?? "1",
+					Name = name
+				} as CreationDto<TGroup>,
+				nameof(DeviceGroup) => new DeviceGroupCreationDto
+				{
+					ParentId = parentGroup?.Id.ToString() ?? "1",
+					Name = name,
+					AppliesTo = Substitute(structure.AppliesTo, variables),
+					CustomProperties = properties
+				} as CreationDto<TGroup>,
+				nameof(NetscanGroup) => new NetscanGroupCreationDto
+				{
+					Name = name
+				} as CreationDto<TGroup>,
+				nameof(ReportGroup) => new ReportGroupCreationDto
+				{
+					Name = name
+				} as CreationDto<TGroup>,
+				nameof(WebsiteGroup) => new WebsiteGroupCreationDto
+				{
+					ParentId = parentGroup?.Id.ToString() ?? "1",
+					Name = name,
+					Properties = properties
+				} as CreationDto<TGroup>,
+				_ => throw new NotSupportedException($"Creating {groupTypeName}s not supported."),
+			};
 			return await portalClient
 				.CreateAsync(creationDto)
 				.ConfigureAwait(false);
 		}
 
-		private static async Task DeleteChildNodesAsync<TGroup, TItem>(PortalClient portalClient, TGroup group)
+		private static async Task DeleteChildNodesAsync<TGroup, TItem>(LogicMonitorClient portalClient, TGroup group)
 			where TGroup : IdentifiedItem, IHasEndpoint, new()
 			where TItem : IdentifiedItem, IHasEndpoint, new()
 		{
-			IEnumerable<int> ids;
-			switch (group)
+			var ids = group switch
 			{
-				case CollectorGroup collectorGroup:
-					ids = (await portalClient
-						.GetAllCollectorsByCollectorGroupId(collectorGroup.Id)
-						.ConfigureAwait(false))?.Select(c => c.Id) ?? Enumerable.Empty<int>();
-					break;
-				case DashboardGroup dashboardGroup:
-					ids = (await portalClient
-						.GetAllAsync(new Filter<Dashboard>
+				CollectorGroup collectorGroup => (await portalClient
+					.GetAllCollectorsByCollectorGroupId(collectorGroup.Id)
+					.ConfigureAwait(false))?.Select(c => c.Id) ?? Enumerable.Empty<int>(),
+				DashboardGroup dashboardGroup => (await portalClient
+					.GetAllAsync(new Filter<Dashboard>
+					{
+						FilterItems = new List<FilterItem<Dashboard>>
 						{
-							FilterItems = new List<FilterItem<Dashboard>>
-							{
-								new Eq<Dashboard>(nameof(Dashboard.DashboardGroupId), dashboardGroup.Id)
-							}
-						})
-						.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>();
-					break;
-				case DeviceGroup deviceGroup:
-					ids = deviceGroup.Devices?.Select(d => d.Id) ?? Enumerable.Empty<int>();
-					break;
-				case NetscanGroup netscanGroup:
-					ids = (await portalClient
-						.GetAllAsync(new Filter<Netscan>
+							new Eq<Dashboard>(nameof(Dashboard.DashboardGroupId), dashboardGroup.Id)
+						}
+					})
+					.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>(),
+				DeviceGroup deviceGroup => deviceGroup.Devices?.Select(d => d.Id) ?? Enumerable.Empty<int>(),
+				NetscanGroup netscanGroup => (await portalClient
+					.GetAllAsync(new Filter<Netscan>
+					{
+						FilterItems = new List<FilterItem<Netscan>>
 						{
-							FilterItems = new List<FilterItem<Netscan>>
-							{
-								new Eq<Netscan>(nameof(Netscan.GroupId), netscanGroup.Id)
-							}
-						})
-						.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>();
-					break;
-				case ReportGroup reportGroup:
-					ids = (await portalClient
-						.GetAllAsync(new Filter<Report>
+							new Eq<Netscan>(nameof(Netscan.GroupId), netscanGroup.Id)
+						}
+					})
+					.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>(),
+				ReportGroup reportGroup => (await portalClient
+					.GetAllAsync(new Filter<Report>
+					{
+						FilterItems = new List<FilterItem<Report>>
 						{
-							FilterItems = new List<FilterItem<Report>>
-							{
-								new Eq<Report>(nameof(Report.GroupId), reportGroup.Id)
-							}
-						})
-						.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>();
-					break;
-				case WebsiteGroup websiteGroup:
-					ids = (await portalClient
-						.GetAllAsync(new Filter<Website>
+							new Eq<Report>(nameof(Report.GroupId), reportGroup.Id)
+						}
+					})
+					.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>(),
+				WebsiteGroup websiteGroup => (await portalClient
+					.GetAllAsync(new Filter<Website>
+					{
+						FilterItems = new List<FilterItem<Website>>
 						{
-							FilterItems = new List<FilterItem<Website>>
-							{
-								new Eq<Website>(nameof(Website.WebsiteGroupId), websiteGroup.Id)
-							}
-						})
-						.ConfigureAwait(false))?.Select(w => w.Id) ?? Enumerable.Empty<int>();
-					break;
-				default:
-					throw new NotSupportedException($"Deleting '{typeof(TGroup).Name}' child items not supported.");
-			}
+							new Eq<Website>(nameof(Website.WebsiteGroupId), websiteGroup.Id)
+						}
+					})
+					.ConfigureAwait(false))?.Select(w => w.Id) ?? Enumerable.Empty<int>(),
+				_ => throw new NotSupportedException($"Deleting '{typeof(TGroup).Name}' child items not supported."),
+			};
 
 			// We have the list of ids to delete
 			foreach (var id in ids)
@@ -414,8 +389,8 @@ namespace LogicMonitor.Provisioning
 			}
 		}
 
-		private static Task DeleteAsync<TItem>(PortalClient portalClient, int id)
+		private static Task DeleteAsync<TItem>(LogicMonitorClient logicMonitorClient, int id)
 			where TItem : IdentifiedItem, IHasEndpoint, new()
-			=> portalClient.DeleteAsync<TItem>(id);
+			=> logicMonitorClient.DeleteAsync<TItem>(id);
 	}
 }
