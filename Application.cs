@@ -5,6 +5,7 @@ using LogicMonitor.Api.Devices;
 using LogicMonitor.Api.Filters;
 using LogicMonitor.Api.Netscans;
 using LogicMonitor.Api.Reports;
+using LogicMonitor.Api.Users;
 using LogicMonitor.Api.Websites;
 using LogicMonitor.Provisioning.Config;
 using Microsoft.Extensions.Hosting;
@@ -286,13 +287,7 @@ namespace LogicMonitor.Provisioning
 					{
 						// No.  We need to create one.
 
-						// Make sure we have a parent group defined
-						if (parentGroup is null)
-						{
-							throw new InvalidOperationException($"Parent group is not defined for {typeof(TGroup)}.");
-						}
-
-						currentGroup = await CreateGroupAsync<TGroup, TItem>(
+						currentGroup = await CreateGroupAsync(
 							logicMonitorClient,
 							parentGroup,
 							structure,
@@ -391,7 +386,7 @@ namespace LogicMonitor.Provisioning
 
 		private static async Task<TGroup> CreateGroupAsync<TGroup, TItem>(
 			LogicMonitorClient portalClient,
-			TGroup parentGroup,
+			TGroup? parentGroup,
 			Structure<TGroup, TItem> structure,
 			List<Property> variables,
 			List<Property> originalProperties)
@@ -399,6 +394,7 @@ namespace LogicMonitor.Provisioning
 			where TItem : IdentifiedItem, IHasEndpoint, new()
 		{
 			var name = Substitute(structure.Name, variables);
+			var description = Substitute(structure.Description, variables);
 			var properties = structure.ApplyProperties
 				? originalProperties
 					.ConvertAll(p => new Property
@@ -412,32 +408,48 @@ namespace LogicMonitor.Provisioning
 			{
 				nameof(CollectorGroup) => new CollectorGroupCreationDto
 				{
-					Name = name
+					Name = name,
+					Description = description
 				} as CreationDto<TGroup>,
 				nameof(DashboardGroup) => new DashboardGroupCreationDto
 				{
 					ParentId = parentGroup?.Id.ToString() ?? "1",
-					Name = name
+					Name = name,
+					Description = description
 				} as CreationDto<TGroup>,
 				nameof(DeviceGroup) => new DeviceGroupCreationDto
 				{
 					ParentId = parentGroup?.Id.ToString() ?? "1",
 					Name = name,
+					Description = description,
 					AppliesTo = Substitute(structure.AppliesTo, variables),
 					CustomProperties = properties
 				} as CreationDto<TGroup>,
 				nameof(NetscanGroup) => new NetscanGroupCreationDto
 				{
-					Name = name
+					Name = name,
+					Description = description
 				} as CreationDto<TGroup>,
 				nameof(ReportGroup) => new ReportGroupCreationDto
 				{
-					Name = name
+					Name = name,
+					Description = description
+				} as CreationDto<TGroup>,
+				nameof(RoleGroup) => new RoleGroupCreationDto
+				{
+					Name = name,
+					Description = description
+				} as CreationDto<TGroup>,
+				nameof(UserGroup) => new UserGroupCreationDto
+				{
+					Name = name,
+					Description = description
 				} as CreationDto<TGroup>,
 				nameof(WebsiteGroup) => new WebsiteGroupCreationDto
 				{
 					ParentId = parentGroup?.Id.ToString() ?? "1",
 					Name = name,
+					Description = description,
 					Properties = properties
 				} as CreationDto<TGroup>,
 				_ => throw new NotSupportedException($"Creating {groupTypeName}s not supported."),

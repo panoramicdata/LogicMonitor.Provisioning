@@ -20,6 +20,11 @@ namespace LogicMonitor.Provisioning.Config
 		public string Name { get; set; } = string.Empty;
 
 		/// <summary>
+		/// The description
+		/// </summary>
+		public string Description { get; set; } = string.Empty;
+
+		/// <summary>
 		/// Any subgroups to create (default: empty list)
 		/// </summary>
 		public List<Structure<TGroup, TItem>> Groups { get; set; } = new();
