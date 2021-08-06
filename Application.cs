@@ -92,14 +92,13 @@ namespace LogicMonitor.Provisioning
 					Console.WriteLine("(C)reate");
 					Console.WriteLine("(D)elete");
 					Console.WriteLine("Ctrl+C to exit");
-					var modeInput = Console.ReadLine();
-					modeInput = modeInput?.ToLowerInvariant() switch
+					var modeInput = Console.ReadKey();
+					mode = modeInput.Key switch
 					{
-						"c" => "Create",
-						"d" => "Delete",
-						_ => string.Empty,
+						ConsoleKey.C => Mode.Create,
+						ConsoleKey.D => Mode.Delete,
+						_ => Mode.Menu,
 					};
-					_ = Enum.TryParse(modeInput, out mode);
 				}
 				await Process(mode, cancellationToken)
 					.ConfigureAwait(false);
@@ -115,7 +114,7 @@ namespace LogicMonitor.Provisioning
 			try
 			{
 				// Collectors
-				await ProcessStructureAsync(
+				var collectorGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Collectors,
@@ -127,7 +126,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// NetScans
-				await ProcessStructureAsync(
+				var netscanGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Netscans,
@@ -139,7 +138,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// Reports
-				await ProcessStructureAsync(
+				var reportGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Reports,
@@ -151,7 +150,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// Dashboards
-				await ProcessStructureAsync(
+				var dashboardGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Dashboards,
@@ -163,7 +162,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// Devices
-				await ProcessStructureAsync(
+				var deviceGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Devices,
@@ -175,7 +174,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// Websites
-				await ProcessStructureAsync(
+				var websiteGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Websites,
@@ -187,7 +186,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// Roles
-				await ProcessStructureAsync(
+				var roleGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Roles,
@@ -199,7 +198,7 @@ namespace LogicMonitor.Provisioning
 					.ConfigureAwait(false);
 
 				// Users
-				await ProcessStructureAsync(
+				var userGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Users,
@@ -210,8 +209,8 @@ namespace LogicMonitor.Provisioning
 					cancellationToken)
 					.ConfigureAwait(false);
 
-				// Toplogies
-				await ProcessStructureAsync(
+				// Topologies
+				var topologyGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Mappings,
@@ -222,6 +221,89 @@ namespace LogicMonitor.Provisioning
 					cancellationToken)
 					.ConfigureAwait(false);
 
+				// Are we creating?
+				switch (mode)
+				{
+					case Mode.Create:
+						foreach (var roleConfiguration in _config.RoleConfigurations.Where(rc => rc.IsEnabled))
+						{
+							// Set up roles
+							var operation = Enum.TryParse<RolePrivilegeOperation>(roleConfiguration.AccessLevel, out var rolePrivilegeOperation)
+								? rolePrivilegeOperation
+								: RolePrivilegeOperation.None;
+							var roleCreationDto = new RoleCreationDto
+							{
+								RequireEULA = roleConfiguration.IsEulaRequired,
+								TwoFactorAuthenticationRequired = roleConfiguration.IsTwoFactorAuthenticationRequired,
+								Name = Substitute(roleConfiguration.Name, _config.Variables),
+								Description = Substitute(roleConfiguration.Description, _config.Variables),
+								CustomHelpLabel = Substitute(roleConfiguration.CustomHelpLabel, _config.Variables),
+								CustomHelpUrl = Substitute(roleConfiguration.CustomHelpUrl, _config.Variables),
+								RoleGroupId = roleGroupId.Value,
+								Privileges = new List<RolePrivilege> {
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.DeviceGroup,
+										ObjectId = deviceGroupId!.ToString(),
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.DashboardGroup,
+										ObjectId = dashboardGroupId!.ToString(),
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.Map,
+										ObjectId = topologyGroupId!.ToString(),
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.ReportGroup,
+										ObjectId = reportGroupId!.ToString(),
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.WebsiteGroup,
+										ObjectId = websiteGroupId!.ToString(),
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.Setting,
+										ObjectId = $"useraccess.admingroup.{userGroupId}",
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.Setting,
+										ObjectId = $"collectorgroup.{collectorGroupId}",
+										Operation = operation
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.Setting,
+										ObjectId = $"role.{roleGroupId}",
+										Operation = RolePrivilegeOperation.Read
+									},
+									new RolePrivilege
+									{
+										ObjectType = PrivilegeObjectType.Help,
+										ObjectId = "chat",
+										Operation = RolePrivilegeOperation.Read
+									}
+								},
+							};
+							await _logicMonitorClient
+								.CreateAsync(roleCreationDto, cancellationToken)
+								.ConfigureAwait(false);
+						}
+						break;
+				}
+
 				_logger.LogInformation("Complete.");
 			}
 			catch (Exception e)
@@ -230,7 +312,7 @@ namespace LogicMonitor.Provisioning
 			}
 		}
 
-		private static async Task ProcessStructureAsync<TGroup, TItem>(
+		private static async Task<int?> ProcessStructureAsync<TGroup, TItem>(
 			LogicMonitorClient logicMonitorClient,
 			Mode mode,
 			Structure<TGroup, TItem> structure,
@@ -245,7 +327,7 @@ namespace LogicMonitor.Provisioning
 			if (!structure.Enabled)
 			{
 				logger.LogInformation($"Not processing {typeof(TGroup)}, as they are disabled.");
-				return;
+				return null;
 			}
 			// Structure is enabled
 			logger.LogInformation($"Processing {typeof(TGroup)}...");
@@ -292,7 +374,7 @@ namespace LogicMonitor.Provisioning
 					if (currentGroup is null)
 					{
 						// No.  There's nothing to do here.
-						return;
+						return null;
 					}
 					// There's deletion to be done.
 
@@ -321,7 +403,7 @@ namespace LogicMonitor.Provisioning
 					await DeleteAsync<TGroup>(logicMonitorClient, currentGroup.Id)
 						.ConfigureAwait(false);
 
-					return;
+					return currentGroup.Id;
 				case Mode.Create:
 					// Create.
 					// Is there an existing group?
@@ -395,7 +477,7 @@ namespace LogicMonitor.Provisioning
 							.ConfigureAwait(false);
 					}
 
-					return;
+					break;
 				default:
 					// Unexpected mode
 					var message = $"Unexpected mode: {mode}";
@@ -403,7 +485,7 @@ namespace LogicMonitor.Provisioning
 					throw new ConfigurationException(message);
 			}
 
-
+			return currentGroup.Id;
 		}
 
 		//private static List<Property>? GetProperties<TGroup, TItem>(

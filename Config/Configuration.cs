@@ -87,5 +87,10 @@ namespace LogicMonitor.Provisioning.Config
 		/// Note that LogicMonitor does not support nesting here.
 		/// </summary>
 		public Structure<UserGroup, User> Users { get; set; } = new();
+
+		/// <summary>
+		/// Role configurations
+		/// </summary>
+		public List<RoleConfiguration> RoleConfigurations { get; set; } = new();
 	}
 }
