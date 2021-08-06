@@ -4,6 +4,7 @@ using LogicMonitor.Api.Dashboards;
 using LogicMonitor.Api.Devices;
 using LogicMonitor.Api.Netscans;
 using LogicMonitor.Api.Reports;
+using LogicMonitor.Api.Topologies;
 using LogicMonitor.Api.Users;
 using LogicMonitor.Api.Websites;
 using System.Collections.Generic;
@@ -74,6 +75,12 @@ namespace LogicMonitor.Provisioning.Config
 		/// Note that LogicMonitor does not support nesting here.
 		/// </summary>
 		public Structure<RoleGroup, Role> Roles { get; set; } = new();
+
+		/// <summary>
+		/// The Topology structure to apply
+		/// Note that LogicMonitor does not support nesting here.
+		/// </summary>
+		public Structure<TopologyGroup, Topology> Mappings { get; set; } = new();
 
 		/// <summary>
 		/// The User structure to apply

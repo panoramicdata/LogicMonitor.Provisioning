@@ -5,6 +5,7 @@ using LogicMonitor.Api.Devices;
 using LogicMonitor.Api.Filters;
 using LogicMonitor.Api.Netscans;
 using LogicMonitor.Api.Reports;
+using LogicMonitor.Api.Topologies;
 using LogicMonitor.Api.Users;
 using LogicMonitor.Api.Websites;
 using LogicMonitor.Provisioning.Config;
@@ -79,17 +80,44 @@ namespace LogicMonitor.Provisioning
 			_logger = logger;
 		}
 
-		public async Task RunAsync(CancellationToken cancellationToken)
+		public async Task RunAsync(Mode mode, CancellationToken cancellationToken)
 		{
 			// Use _logger for logging
-			_logger.LogInformation($"Application start.  Mode: {_config.Mode}");
+			_logger.LogInformation($"Application start.  Mode: {mode}");
 
+			while (true)
+			{
+				while (mode == Mode.Menu)
+				{
+					Console.WriteLine("(C)reate");
+					Console.WriteLine("(D)elete");
+					Console.WriteLine("Ctrl+C to exit");
+					var modeInput = Console.ReadLine();
+					modeInput = modeInput?.ToLowerInvariant() switch
+					{
+						"c" => "Create",
+						"d" => "Delete",
+						_ => string.Empty,
+					};
+					_ = Enum.TryParse(modeInput, out mode);
+				}
+				await Process(mode, cancellationToken)
+					.ConfigureAwait(false);
+
+				mode = Mode.Menu;
+			}
+		}
+
+		private async Task Process(
+			Mode mode,
+			CancellationToken cancellationToken)
+		{
 			try
 			{
 				// Collectors
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Collectors,
 					_config.Variables,
 					_config.Properties,
@@ -101,7 +129,7 @@ namespace LogicMonitor.Provisioning
 				// NetScans
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Netscans,
 					_config.Variables,
 					_config.Properties,
@@ -113,7 +141,7 @@ namespace LogicMonitor.Provisioning
 				// Reports
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Reports,
 					_config.Variables,
 					_config.Properties,
@@ -125,7 +153,7 @@ namespace LogicMonitor.Provisioning
 				// Dashboards
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Dashboards,
 					_config.Variables,
 					_config.Properties,
@@ -137,7 +165,7 @@ namespace LogicMonitor.Provisioning
 				// Devices
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Devices,
 					_config.Variables,
 					_config.Properties,
@@ -149,7 +177,7 @@ namespace LogicMonitor.Provisioning
 				// Websites
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Websites,
 					_config.Variables,
 					_config.Properties,
@@ -161,7 +189,7 @@ namespace LogicMonitor.Provisioning
 				// Roles
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Roles,
 					_config.Variables,
 					_config.Properties,
@@ -173,7 +201,7 @@ namespace LogicMonitor.Provisioning
 				// Users
 				await ProcessStructureAsync(
 					_logicMonitorClient,
-					_config.Mode,
+					mode,
 					_config.Users,
 					_config.Variables,
 					_config.Properties,
@@ -181,10 +209,24 @@ namespace LogicMonitor.Provisioning
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
+
+				// Toplogies
+				await ProcessStructureAsync(
+					_logicMonitorClient,
+					mode,
+					_config.Mappings,
+					_config.Variables,
+					_config.Properties,
+					null,
+					_logger,
+					cancellationToken)
+					.ConfigureAwait(false);
+
+				_logger.LogInformation("Complete.");
 			}
 			catch (Exception e)
 			{
-				_logger.LogError(e, $"Exiting due to {e}");
+				_logger.LogError(e, $"Failed due to '{e.Message}'");
 			}
 		}
 
@@ -360,6 +402,8 @@ namespace LogicMonitor.Provisioning
 					logger.LogError(message);
 					throw new ConfigurationException(message);
 			}
+
+
 		}
 
 		//private static List<Property>? GetProperties<TGroup, TItem>(
@@ -425,6 +469,11 @@ namespace LogicMonitor.Provisioning
 					AppliesTo = Substitute(structure.AppliesTo, variables),
 					CustomProperties = properties
 				} as CreationDto<TGroup>,
+				nameof(TopologyGroup) => new TopologyGroupCreationDto
+				{
+					Name = name,
+					Description = description
+				} as CreationDto<TGroup>,
 				nameof(NetscanGroup) => new NetscanGroupCreationDto
 				{
 					Name = name,
@@ -438,7 +487,7 @@ namespace LogicMonitor.Provisioning
 				nameof(RoleGroup) => new RoleGroupCreationDto
 				{
 					Name = name,
-					Description = description
+					Description = description,
 				} as CreationDto<TGroup>,
 				nameof(UserGroup) => new UserGroupCreationDto
 				{
@@ -478,7 +527,7 @@ namespace LogicMonitor.Provisioning
 							new Eq<Dashboard>(nameof(Dashboard.DashboardGroupId), dashboardGroup.Id)
 						}
 					})
-					.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>(),
+					.ConfigureAwait(false))?.Select(dashboardGroup => dashboardGroup.Id) ?? Enumerable.Empty<int>(),
 				DeviceGroup deviceGroup => deviceGroup.Devices?.Select(d => d.Id) ?? Enumerable.Empty<int>(),
 				NetscanGroup netscanGroup => (await logicMonitorClient
 					.GetAllAsync(new Filter<Netscan>
@@ -488,7 +537,8 @@ namespace LogicMonitor.Provisioning
 							new Eq<Netscan>(nameof(Netscan.GroupId), netscanGroup.Id)
 						}
 					})
-					.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>(),
+					.ConfigureAwait(false))?.Select(netscanGroup => netscanGroup.Id) ?? Enumerable.Empty<int>(),
+				TopologyGroup mappingGroup => Enumerable.Empty<int>(), // TODO - Add Topology deletion
 				ReportGroup reportGroup => (await logicMonitorClient
 					.GetAllAsync(new Filter<Report>
 					{
@@ -497,7 +547,7 @@ namespace LogicMonitor.Provisioning
 							new Eq<Report>(nameof(Report.GroupId), reportGroup.Id)
 						}
 					})
-					.ConfigureAwait(false))?.Select(r => r.Id) ?? Enumerable.Empty<int>(),
+					.ConfigureAwait(false))?.Select(reportGroup => reportGroup.Id) ?? Enumerable.Empty<int>(),
 				WebsiteGroup websiteGroup => (await logicMonitorClient
 					.GetAllAsync(new Filter<Website>
 					{
@@ -506,7 +556,26 @@ namespace LogicMonitor.Provisioning
 							new Eq<Website>(nameof(Website.WebsiteGroupId), websiteGroup.Id)
 						}
 					})
-					.ConfigureAwait(false))?.Select(w => w.Id) ?? Enumerable.Empty<int>(),
+					.ConfigureAwait(false))?.Select(website => website.Id) ?? Enumerable.Empty<int>(),
+				RoleGroup roleGroup => (await logicMonitorClient
+					.GetAllAsync(new Filter<Role>
+					{
+						FilterItems = new List<FilterItem<Role>>
+						{
+							new Eq<Role>(nameof(Role.RoleGroupId), roleGroup.Id)
+						}
+					})
+					.ConfigureAwait(false))?.Select(role => role.Id) ?? Enumerable.Empty<int>(),
+				// Delete users that are ONLY members of this usergroup
+				UserGroup userGroup => (await logicMonitorClient
+					.GetAllAsync(new Filter<User>
+					{
+						FilterItems = new List<FilterItem<User>>
+						{
+							new Eq<User>(nameof(User.UserGroupIds), userGroup.Id)
+						}
+					})
+					.ConfigureAwait(false))?.Select(user => user.Id) ?? Enumerable.Empty<int>(),
 				_ => throw new NotSupportedException($"Deleting '{typeof(TGroup).Name}' child items not supported."),
 			};
 
@@ -529,7 +598,7 @@ namespace LogicMonitor.Provisioning
 				throw new InvalidOperationException("Task is already running.");
 			}
 			TokenSource = new CancellationTokenSource();
-			Task = RunAsync(TokenSource.Token);
+			Task = RunAsync(_config.Mode, TokenSource.Token);
 			return Task.CompletedTask;
 		}
 

@@ -12,7 +12,7 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="5.0.0" />
-		<PackageReference Include="LogicMonitor.Api" Version="2.154.0" />
+		<PackageReference Include="LogicMonitor.Api" Version="2.154.1" />
 		<PackageReference Include="Roslynator.Analyzers" Version="3.2.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
