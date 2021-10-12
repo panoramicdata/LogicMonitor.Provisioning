@@ -12,7 +12,7 @@ namespace LogicMonitor.Provisioning.Config
 		/// <summary>
 		/// Whether this structure is enabled (default: true)
 		/// </summary>
-		public bool Enabled { get; set; } = true;
+		public string Condition { get; set; } = "true";
 
 		/// <summary>
 		/// The name
@@ -22,7 +22,7 @@ namespace LogicMonitor.Provisioning.Config
 		/// <summary>
 		/// The description
 		/// </summary>
-		public string Description { get; set; } = string.Empty;
+		public string Description { get; set; } = "''";
 
 		/// <summary>
 		/// Any subgroups to create (default: empty list)
@@ -35,13 +35,26 @@ namespace LogicMonitor.Provisioning.Config
 		public List<ItemSpec> Items { get; set; } = new();
 
 		/// <summary>
-		/// Whether to apply properties (default: false)
-		/// </summary>
-		public bool ApplyProperties { get; set; }
-
-		/// <summary>
 		/// Where relevant: the appliesTo (default: null)
 		/// </summary>
 		public string? AppliesTo { get; set; }
+
+		/// <summary>
+		/// The XLSX file and sheet to import data from, in the form:
+		/// "fileName:SheetName"
+		/// Filename can be local to the executable or an absolute path
+		/// </summary>
+		public string ImportItemsFrom { get; set; } = string.Empty;
+
+		/// <summary>
+		/// If supplied, the full path to the parent object.
+		/// May only be specified on the root object
+		/// </summary>
+		public string? Parent { get; set; }
+
+		/// <summary>
+		/// The properties to set
+		/// </summary>
+		public Dictionary<string, string> Properties { get; set; } = new();
 	}
 }

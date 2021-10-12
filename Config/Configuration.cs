@@ -1,4 +1,3 @@
-using LogicMonitor.Api;
 using LogicMonitor.Api.Collectors;
 using LogicMonitor.Api.Dashboards;
 using LogicMonitor.Api.Devices;
@@ -22,6 +21,8 @@ namespace LogicMonitor.Provisioning.Config
 		/// </summary>
 		public LogicMonitorCredentials LogicMonitorCredentials { get; set; } = new();
 
+		public Repetition Repetition { get; set; } = new();
+
 		/// <summary>
 		/// The mode (create = provisioning, delete = removal)
 		/// </summary>
@@ -30,12 +31,7 @@ namespace LogicMonitor.Provisioning.Config
 		/// <summary>
 		/// Variables to set for all groups where properties can apply
 		/// </summary>
-		public List<Property> Variables { get; set; } = new();
-
-		/// <summary>
-		/// The properties to set
-		/// </summary>
-		public List<Property> Properties { get; set; } = new();
+		public Dictionary<string, string> Variables { get; set; } = new();
 
 		/// <summary>
 		/// The Report structure to apply.

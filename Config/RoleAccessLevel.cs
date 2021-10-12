@@ -3,7 +3,7 @@ namespace LogicMonitor.Provisioning.Config
 	/// <summary>
 	/// Role access level
 	/// </summary>
-	internal enum RoleAccessLevel
+	public enum RoleAccessLevel
 	{
 		/// <summary>
 		/// No access

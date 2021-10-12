@@ -9,9 +9,12 @@ using LogicMonitor.Api.Topologies;
 using LogicMonitor.Api.Users;
 using LogicMonitor.Api.Websites;
 using LogicMonitor.Provisioning.Config;
+using LogicMonitor.Provisioning.Config.Validators;
+using LogicMonitor.Provisioning.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PanoramicData.SheetMagic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,8 +65,12 @@ namespace LogicMonitor.Provisioning
 			// Store the config
 			_config = options.Value;
 
-			// Validate the credentials
-			_config.LogicMonitorCredentials.Validate();
+			var validator = new ConfigurationValidator();
+			var validationResult = validator.Validate(_config);
+			if (!validationResult.IsValid)
+			{
+				throw new ArgumentException("Invalid configuation:\n" + string.Join("\n", validationResult.Errors.Select(e => e.ErrorMessage)));
+			}
 
 			// Create a portal client
 			_logicMonitorClient = new LogicMonitorClient(
@@ -80,9 +87,16 @@ namespace LogicMonitor.Provisioning
 			_logger = logger;
 		}
 
-		public async Task RunAsync(Mode mode, CancellationToken cancellationToken)
+		public async Task RunAsync(CancellationToken cancellationToken)
 		{
 			// Use _logger for logging
+			var mode = _config.Mode;
+			var repetition = _config.Repetition;
+			var variables = new Dictionary<string, object?>();
+			foreach (var kvp in _config.Variables)
+			{
+				variables[kvp.Key] = kvp.Value.Evaluate(variables);
+			}
 			_logger.LogInformation($"Application start.  Mode: {mode}");
 
 			while (true)
@@ -100,15 +114,83 @@ namespace LogicMonitor.Provisioning
 						_ => Mode.Menu,
 					};
 				}
-				await Process(mode, cancellationToken)
-					.ConfigureAwait(false);
 
+				foreach (var repetitionItem in GetRepetitionItems(repetition, variables))
+				{
+					// Skip this row if the IsEnabled cell is set and
+					// - does not parse as a bool or
+					// - is set to "FALSE"
+					if (
+						repetitionItem.TryGetValue("IsEnabled", out var isEnabledValue)
+						&& (isEnabledValue is not bool isEnabledBool || !isEnabledBool)
+					)
+					{
+						// Skip this one
+						continue;
+					}
+
+					await ProcessAsync(
+						mode,
+						repetitionItem,
+						cancellationToken)
+						.ConfigureAwait(false);
+				}
 				mode = Mode.Menu;
 			}
 		}
 
-		private async Task Process(
+		private static List<Dictionary<string, object?>> GetRepetitionItems(
+			Repetition repetition,
+			Dictionary<string, object?> variables)
+		{
+			switch (repetition.Type)
+			{
+				case RepetitionType.None:
+					// Is the Config is set
+					if (!string.IsNullOrWhiteSpace(repetition.Config))
+					{
+						// Yes - this is not supported
+						throw new ConfigurationException($"Unexpected repetition config for repetition type: '{repetition.Type}'");
+					}
+					// Return a single item
+					return new List<Dictionary<string, object?>>()
+				{
+					variables
+				};
+				case RepetitionType.Xlsx:
+					{
+						// Try to parse the config
+						var evaluatedConfig = repetition.Config.Evaluate<string>(variables);
+						var fileAndSheetInfo = new FileAndSheetInfo(evaluatedConfig ?? throw new ConfigurationException("Xlsx config should evaluate to a string."));
+
+						using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
+						magicSpreadsheet.Load();
+						var sheetExtendedObjects = magicSpreadsheet.GetExtendedList<object>(fileAndSheetInfo.SheetName);
+						var repetitionItems = new List<Dictionary<string, object?>>();
+						foreach (var sheetExtendedObject in sheetExtendedObjects)
+						{
+							// Construct a dictionary based on the provided variables, plus the spreadsheet items
+							var itemDictionary = new Dictionary<string, object?>();
+							foreach (var kvp in variables)
+							{
+								itemDictionary[kvp.Key] = kvp.Value;
+							}
+							foreach (var kvp in sheetExtendedObject.Properties)
+							{
+								itemDictionary[kvp.Key.ToPascalCase()] = kvp.Value;
+							}
+							repetitionItems.Add(itemDictionary);
+						}
+						return repetitionItems;
+					}
+				default:
+					throw new NotSupportedException($"Unsupported repetition type: '{repetition.Type}'");
+			}
+		}
+
+		private async Task ProcessAsync(
 			Mode mode,
+			Dictionary<string, object?> variables,
 			CancellationToken cancellationToken)
 		{
 			try
@@ -118,8 +200,7 @@ namespace LogicMonitor.Provisioning
 					_logicMonitorClient,
 					mode,
 					_config.Collectors,
-					_config.Variables,
-					_config.Properties,
+					variables,
 					null,
 					_logger,
 					cancellationToken)
@@ -130,8 +211,7 @@ namespace LogicMonitor.Provisioning
 					_logicMonitorClient,
 					mode,
 					_config.Netscans,
-					_config.Variables,
-					_config.Properties,
+					variables,
 					null,
 					_logger,
 					cancellationToken)
@@ -142,45 +222,56 @@ namespace LogicMonitor.Provisioning
 					_logicMonitorClient,
 					mode,
 					_config.Reports,
-					_config.Variables,
-					_config.Properties,
+					variables,
 					null,
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
 				// Dashboards
+				var parentDashboardGroup = _config.Dashboards.Parent is null
+					? null
+					: await _logicMonitorClient
+						.GetDashboardGroupByFullPathAsync(_config.Dashboards.Parent.Evaluate<string>(variables), cancellationToken)
+						.ConfigureAwait(false);
 				var dashboardGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Dashboards,
-					_config.Variables,
-					_config.Properties,
-					null,
+					variables,
+					parentDashboardGroup,
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
 				// Devices
+				var parentDeviceGroup = _config.Devices.Parent is null
+					? null
+					: await _logicMonitorClient
+						.GetDeviceGroupByFullPathAsync(_config.Devices.Parent.Evaluate<string>(variables), cancellationToken)
+						.ConfigureAwait(false);
 				var deviceGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Devices,
-					_config.Variables,
-					_config.Properties,
-					null,
+					variables,
+					parentDeviceGroup,
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
 				// Websites
+				var parentWebsiteGroup = _config.Websites.Parent is null
+					? null
+					: await _logicMonitorClient
+						.GetWebsiteGroupByFullPathAsync(_config.Websites.Parent.Evaluate<string>(variables), cancellationToken)
+						.ConfigureAwait(false);
 				var websiteGroupId = await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Websites,
-					_config.Variables,
-					_config.Properties,
-					null,
+					variables,
+					parentWebsiteGroup,
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
@@ -190,8 +281,7 @@ namespace LogicMonitor.Provisioning
 					_logicMonitorClient,
 					mode,
 					_config.Roles,
-					_config.Variables,
-					_config.Properties,
+					variables,
 					null,
 					_logger,
 					cancellationToken)
@@ -202,8 +292,7 @@ namespace LogicMonitor.Provisioning
 					_logicMonitorClient,
 					mode,
 					_config.Users,
-					_config.Variables,
-					_config.Properties,
+					variables,
 					null,
 					_logger,
 					cancellationToken)
@@ -214,74 +303,109 @@ namespace LogicMonitor.Provisioning
 					_logicMonitorClient,
 					mode,
 					_config.Mappings,
-					_config.Variables,
-					_config.Properties,
+					variables,
 					null,
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
-				// Are we creating?
-				switch (mode)
-				{
-					case Mode.Create:
-						foreach (var roleConfiguration in _config.RoleConfigurations.Where(rc => rc.IsEnabled))
+				await ProcessRoleConfigurationsAsync(
+					mode,
+					_config.RoleConfigurations,
+					variables,
+					_logicMonitorClient,
+					collectorGroupId,
+					reportGroupId,
+					dashboardGroupId,
+					deviceGroupId,
+					websiteGroupId,
+					roleGroupId,
+					userGroupId,
+					topologyGroupId,
+					cancellationToken)
+					.ConfigureAwait(false);
+
+				_logger.LogInformation("Complete.");
+			}
+			catch (Exception e)
+			{
+				_logger.LogError(e, $"Failed due to '{e.Message}'");
+			}
+		}
+
+		private static async Task ProcessRoleConfigurationsAsync(
+			Mode mode,
+			List<RoleConfiguration> roleConfigurations,
+			Dictionary<string, object?> variables,
+			LogicMonitorClient logicMonitorClient,
+			int? collectorGroupId,
+			int? reportGroupId,
+			int? dashboardGroupId,
+			int? deviceGroupId,
+			int? websiteGroupId,
+			int? roleGroupId,
+			int? userGroupId,
+			int? topologyGroupId,
+			CancellationToken cancellationToken)
+		{
+			// Are we creating?
+			switch (mode)
+			{
+				case Mode.Create:
+					foreach (var roleConfiguration in roleConfigurations.Where(rc => rc.Condition.Evaluate(variables) as bool? == true))
+					{
+						// Set up roles
+						var roleCreationDto = new RoleCreationDto
 						{
-							// Set up roles
-							var operation = Enum.TryParse<RolePrivilegeOperation>(roleConfiguration.AccessLevel, out var rolePrivilegeOperation)
-								? rolePrivilegeOperation
-								: RolePrivilegeOperation.None;
-							var roleCreationDto = new RoleCreationDto
-							{
-								RequireEULA = roleConfiguration.IsEulaRequired,
-								TwoFactorAuthenticationRequired = roleConfiguration.IsTwoFactorAuthenticationRequired,
-								Name = Substitute(roleConfiguration.Name, _config.Variables),
-								Description = Substitute(roleConfiguration.Description, _config.Variables),
-								CustomHelpLabel = Substitute(roleConfiguration.CustomHelpLabel, _config.Variables),
-								CustomHelpUrl = Substitute(roleConfiguration.CustomHelpUrl, _config.Variables),
-								RoleGroupId = roleGroupId.Value,
-								Privileges = new List<RolePrivilege> {
+							RequireEULA = roleConfiguration.IsEulaRequired.Evaluate<bool>(variables),
+							TwoFactorAuthenticationRequired = roleConfiguration.IsTwoFactorAuthenticationRequired.Evaluate<bool>(variables),
+							Name = roleConfiguration.Name.Evaluate<string>(variables),
+							Description = roleConfiguration.Description.Evaluate<string>(variables),
+							CustomHelpLabel = roleConfiguration.CustomHelpLabel.Evaluate<string>(variables),
+							CustomHelpUrl = roleConfiguration.CustomHelpUrl.Evaluate<string>(variables),
+							RoleGroupId = roleGroupId ?? 0,
+							Privileges = new List<RolePrivilege> {
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.DeviceGroup,
 										ObjectId = deviceGroupId!.ToString(),
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.DashboardGroup,
 										ObjectId = dashboardGroupId!.ToString(),
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.Map,
 										ObjectId = topologyGroupId!.ToString(),
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.ReportGroup,
 										ObjectId = reportGroupId!.ToString(),
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.WebsiteGroup,
 										ObjectId = websiteGroupId!.ToString(),
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.Setting,
 										ObjectId = $"useraccess.admingroup.{userGroupId}",
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
 										ObjectType = PrivilegeObjectType.Setting,
 										ObjectId = $"collectorgroup.{collectorGroupId}",
-										Operation = operation
+										Operation = roleConfiguration.AccessLevel
 									},
 									new RolePrivilege
 									{
@@ -296,19 +420,12 @@ namespace LogicMonitor.Provisioning
 										Operation = RolePrivilegeOperation.Read
 									}
 								},
-							};
-							await _logicMonitorClient
-								.CreateAsync(roleCreationDto, cancellationToken)
-								.ConfigureAwait(false);
-						}
-						break;
-				}
-
-				_logger.LogInformation("Complete.");
-			}
-			catch (Exception e)
-			{
-				_logger.LogError(e, $"Failed due to '{e.Message}'");
+						};
+						await logicMonitorClient
+							.CreateAsync(roleCreationDto, cancellationToken)
+							.ConfigureAwait(false);
+					}
+					break;
 			}
 		}
 
@@ -316,15 +433,14 @@ namespace LogicMonitor.Provisioning
 			LogicMonitorClient logicMonitorClient,
 			Mode mode,
 			Structure<TGroup, TItem> structure,
-			List<Property> variables,
-			List<Property> properties,
+			Dictionary<string, object?> variables,
 			TGroup? parentGroup,
 			ILogger<Application> logger,
 			CancellationToken cancellationToken)
 				where TGroup : IdentifiedItem, IHasEndpoint, new()
 				where TItem : IdentifiedItem, IHasEndpoint, new()
 		{
-			if (!structure.Enabled)
+			if (!structure.Condition.Evaluate<bool>(variables))
 			{
 				logger.LogInformation($"Not processing {typeof(TGroup)}, as they are disabled.");
 				return null;
@@ -332,11 +448,14 @@ namespace LogicMonitor.Provisioning
 			// Structure is enabled
 			logger.LogInformation($"Processing {typeof(TGroup)}...");
 
+			// Determine the properties to set
+			var properties = structure.Properties;
+
 			// Get any existing Groups
 			// Filter on the group name
 			var filterItems = new List<FilterItem<TGroup>>
 			{
-				new Eq<TGroup>(nameof(NamedEntity.Name), Substitute(structure.Name, variables))
+				new Eq<TGroup>(nameof(NamedEntity.Name), structure.Name.Evaluate(variables))
 			};
 			// For hierarchical groups, also filter on the parent id
 			switch (typeof(TGroup).Name)
@@ -387,7 +506,6 @@ namespace LogicMonitor.Provisioning
 							mode,
 							childStructure,
 							variables,
-							properties,
 							currentGroup,
 							logger,
 							cancellationToken
@@ -415,8 +533,7 @@ namespace LogicMonitor.Provisioning
 							logicMonitorClient,
 							parentGroup,
 							structure,
-							variables,
-							properties)
+							variables)
 							.ConfigureAwait(false);
 
 						// Create individual items (e.g. Dashboards)
@@ -446,8 +563,12 @@ namespace LogicMonitor.Provisioning
 										.CloneAsync(item.CloneFromId.Value,
 										new DashboardCloneRequest
 										{
-											Name = Substitute(item.Name, variables),
-											Description = Substitute(item.Description, variables),
+											Name = string.IsNullOrWhiteSpace(item.Name)
+												? originalDashboard.Name
+												: item.Name.Evaluate<string>(variables),
+											Description = string.IsNullOrWhiteSpace(item.Description)
+												? originalDashboard.Description
+												: item.Description.Evaluate<string>(variables),
 											DashboardGroupId = currentGroup.Id,
 											WidgetsConfig = originalDashboard.WidgetsConfig,
 											WidgetsOrder = originalDashboard.WidgetsOrder
@@ -461,6 +582,7 @@ namespace LogicMonitor.Provisioning
 							}
 						}
 					}
+
 					// We now have a group.  Process child structure
 					foreach (var childStructure in structure.Groups
 						?? Enumerable.Empty<Structure<TGroup, TItem>>())
@@ -470,9 +592,19 @@ namespace LogicMonitor.Provisioning
 							mode,
 							childStructure,
 							variables,
-							properties,
 							currentGroup,
 							logger,
+							cancellationToken)
+							.ConfigureAwait(false);
+					}
+
+					// Import any items
+					if (structure.ImportItemsFrom is not null)
+					{
+						await ImportItemsAsync<TGroup, TItem>(
+							logicMonitorClient,
+							currentGroup,
+							structure.ImportItemsFrom,
 							cancellationToken)
 							.ConfigureAwait(false);
 					}
@@ -488,47 +620,43 @@ namespace LogicMonitor.Provisioning
 			return currentGroup.Id;
 		}
 
-		//private static List<Property>? GetProperties<TGroup, TItem>(
-		//	Structure<TGroup, TItem> structure,
-		//	List<Property> variables,
-		//	List<Property> properties)
-		//	=> structure.ApplyProperties
-		//		? properties.ConvertAll(p => new Property { Name = p.Name, Value = Substitute(p.Value, variables) })
-		//		: null;
-
-		private static string? Substitute(string? inputString, List<Property> variables)
+		private static async Task ImportItemsAsync<TGroup, TItem>(
+			LogicMonitorClient logicMonitorClient,
+			TGroup currentGroup,
+			string importItemsFrom,
+			CancellationToken cancellationToken)
+			where TGroup : IdentifiedItem, IHasEndpoint, new()
+			where TItem : IdentifiedItem, IHasEndpoint, new()
 		{
-			if (inputString is null)
-			{
-				return null;
-			}
+			var fileAndSheetInfo = new FileAndSheetInfo(importItemsFrom);
+			using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
+			magicSpreadsheet.Load();
 
-			foreach (var variable in variables)
+			switch (currentGroup)
 			{
-				inputString = inputString.Replace($"{{{variable.Name}}}", variable.Value);
+				case NetscanGroup netscanGroup:
+					// Create netscan groups from spreadsheet
+					var netscanCreationDtos = magicSpreadsheet.GetExtendedList<NetscanCreationDto>(fileAndSheetInfo.SheetName);
+					foreach (var netscanCreationDto in netscanCreationDtos)
+					{
+						await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto.Item, cancellationToken)
+							.ConfigureAwait(false);
+					}
+					break;
 			}
-			return inputString;
 		}
 
 		private static async Task<TGroup> CreateGroupAsync<TGroup, TItem>(
 			LogicMonitorClient portalClient,
 			TGroup? parentGroup,
 			Structure<TGroup, TItem> structure,
-			List<Property> variables,
-			List<Property> originalProperties)
+			Dictionary<string, object?> variables)
 			where TGroup : IdentifiedItem, IHasEndpoint, new()
 			where TItem : IdentifiedItem, IHasEndpoint, new()
 		{
-			var name = Substitute(structure.Name, variables);
-			var description = Substitute(structure.Description, variables);
-			var properties = structure.ApplyProperties
-				? originalProperties
-					.ConvertAll(p => new Property
-					{
-						Name = p.Name,
-						Value = Substitute(p.Value, variables)
-					})
-				: null;
+			var name = structure.Name.Evaluate<string>(variables);
+			var description = structure.Description.Evaluate<string>(variables);
+			var properties = structure.Properties.Evaluate(variables);
 			var groupTypeName = typeof(TGroup).Name;
 			var creationDto = groupTypeName switch
 			{
@@ -548,8 +676,8 @@ namespace LogicMonitor.Provisioning
 					ParentId = parentGroup?.Id.ToString() ?? "1",
 					Name = name,
 					Description = description,
-					AppliesTo = Substitute(structure.AppliesTo, variables),
-					CustomProperties = properties
+					AppliesTo = structure.AppliesTo?.Evaluate<string>(variables),
+					CustomProperties = properties,
 				} as CreationDto<TGroup>,
 				nameof(TopologyGroup) => new TopologyGroupCreationDto
 				{
@@ -680,7 +808,7 @@ namespace LogicMonitor.Provisioning
 				throw new InvalidOperationException("Task is already running.");
 			}
 			TokenSource = new CancellationTokenSource();
-			Task = RunAsync(_config.Mode, TokenSource.Token);
+			Task = RunAsync(TokenSource.Token);
 			return Task.CompletedTask;
 		}
 

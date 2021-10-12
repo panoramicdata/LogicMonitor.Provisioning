@@ -1,3 +1,5 @@
+using LogicMonitor.Api.Users;
+
 namespace LogicMonitor.Provisioning.Config
 {
 	/// <summary>
@@ -18,32 +20,32 @@ namespace LogicMonitor.Provisioning.Config
 		/// <summary>
 		/// Whether it is enabled.
 		/// </summary>
-		public bool IsEnabled { get; set; } = true;
+		public string Condition { get; set; } = "true";
 
 		/// <summary>
 		/// The role privilege operation to apply to all groups
 		/// Options: None, Read or Write
 		/// </summary>
-		public string AccessLevel { get; set; } = "None";
+		public RolePrivilegeOperation AccessLevel { get; set; }
 
 		/// <summary>
 		/// The custom help label
 		/// </summary>
-		public string CustomHelpLabel { get; set; } = string.Empty;
+		public string CustomHelpLabel { get; set; } = "''";
 
 		/// <summary>
 		/// The custom help URL
 		/// </summary>
-		public string CustomHelpUrl { get; set; } = string.Empty;
+		public string CustomHelpUrl { get; set; } = "''";
 
 		/// <summary>
 		/// Whether users are required to approve the EULA
 		/// </summary>
-		public bool IsEulaRequired { get; set; }
+		public string IsEulaRequired { get; set; } = "false";
 
 		/// <summary>
 		/// Whether users are required to use two-factor authentication
 		/// </summary>
-		public bool IsTwoFactorAuthenticationRequired { get; set; }
+		public string IsTwoFactorAuthenticationRequired { get; set; } = "false";
 	}
 }
