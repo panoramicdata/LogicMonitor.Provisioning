@@ -40,13 +40,6 @@ namespace LogicMonitor.Provisioning.Config
 		public string? AppliesTo { get; set; }
 
 		/// <summary>
-		/// The XLSX file and sheet to import data from, in the form:
-		/// "fileName:SheetName"
-		/// Filename can be local to the executable or an absolute path
-		/// </summary>
-		public string ImportItemsFrom { get; set; } = string.Empty;
-
-		/// <summary>
 		/// If supplied, the full path to the parent object.
 		/// May only be specified on the root object
 		/// </summary>

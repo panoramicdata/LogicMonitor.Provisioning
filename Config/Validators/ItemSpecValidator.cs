@@ -1,4 +1,5 @@
 using FluentValidation;
+using System.Linq;
 
 namespace LogicMonitor.Provisioning.Config.Validators
 {
@@ -6,8 +7,16 @@ namespace LogicMonitor.Provisioning.Config.Validators
 	{
 		public ItemSpecValidator()
 		{
-			RuleFor(i => i.Name).NotEmpty().Unless(i => i.CloneFromId is not null);
-			RuleFor(i => i.Description).NotEmpty();
+			RuleFor(i => i.Type).IsInEnum();
+			RuleFor(i => i.Config)
+				.NotEmpty()
+				.When(i => new[]
+					{
+						ItemSpecType.XlsxMulti,
+						ItemSpecType.CloneSingleFromId
+					}
+					.Contains(i.Type)
+				);
 		}
 	}
 }

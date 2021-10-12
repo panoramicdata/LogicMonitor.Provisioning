@@ -196,50 +196,13 @@ namespace LogicMonitor.Provisioning
 			try
 			{
 				// Collectors
-				var collectorGroupId = await ProcessStructureAsync(
+				await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Collectors,
 					variables,
 					null,
-					_logger,
-					cancellationToken)
-					.ConfigureAwait(false);
-
-				// NetScans
-				var netscanGroupId = await ProcessStructureAsync(
-					_logicMonitorClient,
-					mode,
-					_config.Netscans,
-					variables,
-					null,
-					_logger,
-					cancellationToken)
-					.ConfigureAwait(false);
-
-				// Reports
-				var reportGroupId = await ProcessStructureAsync(
-					_logicMonitorClient,
-					mode,
-					_config.Reports,
-					variables,
-					null,
-					_logger,
-					cancellationToken)
-					.ConfigureAwait(false);
-
-				// Dashboards
-				var parentDashboardGroup = _config.Dashboards.Parent is null
-					? null
-					: await _logicMonitorClient
-						.GetDashboardGroupByFullPathAsync(_config.Dashboards.Parent.Evaluate<string>(variables), cancellationToken)
-						.ConfigureAwait(false);
-				var dashboardGroupId = await ProcessStructureAsync(
-					_logicMonitorClient,
-					mode,
-					_config.Dashboards,
-					variables,
-					parentDashboardGroup,
+					"collectorGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
@@ -250,12 +213,54 @@ namespace LogicMonitor.Provisioning
 					: await _logicMonitorClient
 						.GetDeviceGroupByFullPathAsync(_config.Devices.Parent.Evaluate<string>(variables), cancellationToken)
 						.ConfigureAwait(false);
-				var deviceGroupId = await ProcessStructureAsync(
+				await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Devices,
 					variables,
 					parentDeviceGroup,
+					"deviceGroupId",
+					_logger,
+					cancellationToken)
+					.ConfigureAwait(false);
+
+				// NetScans
+				await ProcessStructureAsync(
+					_logicMonitorClient,
+					mode,
+					_config.Netscans,
+					variables,
+					null,
+					"netscanGroupId",
+					_logger,
+					cancellationToken)
+					.ConfigureAwait(false);
+
+				// Reports
+				await ProcessStructureAsync(
+					_logicMonitorClient,
+					mode,
+					_config.Reports,
+					variables,
+					null,
+					"reportGroupId",
+					_logger,
+					cancellationToken)
+					.ConfigureAwait(false);
+
+				// Dashboards
+				var parentDashboardGroup = _config.Dashboards.Parent is null
+					? null
+					: await _logicMonitorClient
+						.GetDashboardGroupByFullPathAsync(_config.Dashboards.Parent.Evaluate<string>(variables), cancellationToken)
+						.ConfigureAwait(false);
+				await ProcessStructureAsync(
+					_logicMonitorClient,
+					mode,
+					_config.Dashboards,
+					variables,
+					parentDashboardGroup,
+					"dashboardGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
@@ -266,45 +271,49 @@ namespace LogicMonitor.Provisioning
 					: await _logicMonitorClient
 						.GetWebsiteGroupByFullPathAsync(_config.Websites.Parent.Evaluate<string>(variables), cancellationToken)
 						.ConfigureAwait(false);
-				var websiteGroupId = await ProcessStructureAsync(
+				await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Websites,
 					variables,
 					parentWebsiteGroup,
+					"websiteGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
 				// Roles
-				var roleGroupId = await ProcessStructureAsync(
+				await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Roles,
 					variables,
 					null,
+					"roleGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
 				// Users
-				var userGroupId = await ProcessStructureAsync(
+				await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Users,
 					variables,
 					null,
+					"userGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
 				// Topologies
-				var topologyGroupId = await ProcessStructureAsync(
+				await ProcessStructureAsync(
 					_logicMonitorClient,
 					mode,
 					_config.Mappings,
 					variables,
 					null,
+					"topologyGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
@@ -314,14 +323,6 @@ namespace LogicMonitor.Provisioning
 					_config.RoleConfigurations,
 					variables,
 					_logicMonitorClient,
-					collectorGroupId,
-					reportGroupId,
-					dashboardGroupId,
-					deviceGroupId,
-					websiteGroupId,
-					roleGroupId,
-					userGroupId,
-					topologyGroupId,
 					cancellationToken)
 					.ConfigureAwait(false);
 
@@ -338,20 +339,13 @@ namespace LogicMonitor.Provisioning
 			List<RoleConfiguration> roleConfigurations,
 			Dictionary<string, object?> variables,
 			LogicMonitorClient logicMonitorClient,
-			int? collectorGroupId,
-			int? reportGroupId,
-			int? dashboardGroupId,
-			int? deviceGroupId,
-			int? websiteGroupId,
-			int? roleGroupId,
-			int? userGroupId,
-			int? topologyGroupId,
 			CancellationToken cancellationToken)
 		{
 			// Are we creating?
 			switch (mode)
 			{
 				case Mode.Create:
+					var roleGroupId = variables.TryGetValue("roleGroupId", out var roleGroupIdNullable) ? roleGroupIdNullable as int? : null;
 					foreach (var roleConfiguration in roleConfigurations.Where(rc => rc.Condition.Evaluate(variables) as bool? == true))
 					{
 						// Set up roles
@@ -364,63 +358,64 @@ namespace LogicMonitor.Provisioning
 							CustomHelpLabel = roleConfiguration.CustomHelpLabel.Evaluate<string>(variables),
 							CustomHelpUrl = roleConfiguration.CustomHelpUrl.Evaluate<string>(variables),
 							RoleGroupId = roleGroupId ?? 0,
-							Privileges = new List<RolePrivilege> {
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.DeviceGroup,
-										ObjectId = deviceGroupId!.ToString(),
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.DashboardGroup,
-										ObjectId = dashboardGroupId!.ToString(),
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.Map,
-										ObjectId = topologyGroupId!.ToString(),
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.ReportGroup,
-										ObjectId = reportGroupId!.ToString(),
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.WebsiteGroup,
-										ObjectId = websiteGroupId!.ToString(),
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.Setting,
-										ObjectId = $"useraccess.admingroup.{userGroupId}",
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.Setting,
-										ObjectId = $"collectorgroup.{collectorGroupId}",
-										Operation = roleConfiguration.AccessLevel
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.Setting,
-										ObjectId = $"role.{roleGroupId}",
-										Operation = RolePrivilegeOperation.Read
-									},
-									new RolePrivilege
-									{
-										ObjectType = PrivilegeObjectType.Help,
-										ObjectId = "chat",
-										Operation = RolePrivilegeOperation.Read
-									}
-								},
+							Privileges = new(),
 						};
+
+						foreach (var x in new List<RoleSpec>
+						{
+							new (
+								PrivilegeObjectType.DeviceGroup,
+								variables.TryGetValue("deviceGroupId", out var deviceGroupId) ? deviceGroupId?.ToString() : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.DashboardGroup,
+								variables.TryGetValue("dashboardGroupId", out var dashboardGroupId) ? dashboardGroupId?.ToString() : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.Map,
+								variables.TryGetValue("topologyGroupId", out var topologyGroupId) ? topologyGroupId?.ToString() : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.ReportGroup,
+								variables.TryGetValue("reportGroupId", out var reportGroupId) ? reportGroupId?.ToString() : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.WebsiteGroup,
+								variables.TryGetValue("websiteGroupId", out var websiteGroupId) ? websiteGroupId?.ToString() : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.Setting,
+								variables.TryGetValue("userGroupId", out var userGroupId) ? $"useraccess.admingroup.{userGroupId}" : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.Setting,
+								variables.TryGetValue("collectorGroupId", out var collectorGroupId) ? $"collectorgroup.{collectorGroupId}" : null,
+								roleConfiguration.AccessLevel),
+							new (
+								PrivilegeObjectType.Setting,
+								roleGroupId.HasValue ? $"role.{roleGroupId}" : null,
+								RolePrivilegeOperation.Read),
+							new (
+								PrivilegeObjectType.Help,
+								"chat",
+								RolePrivilegeOperation.Read)
+						})
+						{
+							if (x.ObjectId is not string objectId)
+							{
+								continue;
+							}
+
+							// Add the priviledge
+							var rolePriviledge = new RolePrivilege
+							{
+								ObjectType = x.ObjectType,
+								ObjectId = objectId,
+								Operation = x.RolePrivilegeOperation,
+							};
+							roleCreationDto.Privileges.Add(rolePriviledge);
+						}
+
 						await logicMonitorClient
 							.CreateAsync(roleCreationDto, cancellationToken)
 							.ConfigureAwait(false);
@@ -429,12 +424,13 @@ namespace LogicMonitor.Provisioning
 			}
 		}
 
-		private static async Task<int?> ProcessStructureAsync<TGroup, TItem>(
+		private static async Task ProcessStructureAsync<TGroup, TItem>(
 			LogicMonitorClient logicMonitorClient,
 			Mode mode,
 			Structure<TGroup, TItem> structure,
 			Dictionary<string, object?> variables,
 			TGroup? parentGroup,
+			string groupVariableName,
 			ILogger<Application> logger,
 			CancellationToken cancellationToken)
 				where TGroup : IdentifiedItem, IHasEndpoint, new()
@@ -443,7 +439,7 @@ namespace LogicMonitor.Provisioning
 			if (!structure.Condition.Evaluate<bool>(variables))
 			{
 				logger.LogInformation($"Not processing {typeof(TGroup)}, as they are disabled.");
-				return null;
+				return;
 			}
 			// Structure is enabled
 			logger.LogInformation($"Processing {typeof(TGroup)}...");
@@ -493,7 +489,7 @@ namespace LogicMonitor.Provisioning
 					if (currentGroup is null)
 					{
 						// No.  There's nothing to do here.
-						return null;
+						return;
 					}
 					// There's deletion to be done.
 
@@ -507,6 +503,7 @@ namespace LogicMonitor.Provisioning
 							childStructure,
 							variables,
 							currentGroup,
+							groupVariableName,
 							logger,
 							cancellationToken
 							)
@@ -521,7 +518,7 @@ namespace LogicMonitor.Provisioning
 					await DeleteAsync<TGroup>(logicMonitorClient, currentGroup.Id)
 						.ConfigureAwait(false);
 
-					return currentGroup.Id;
+					return;
 				case Mode.Create:
 					// Create.
 					// Is there an existing group?
@@ -540,9 +537,9 @@ namespace LogicMonitor.Provisioning
 						foreach (var item in structure.Items ?? Enumerable.Empty<ItemSpec>())
 						{
 							// Ensure that the name is set
-							if (item.Name is null)
+							if (!item.Fields.TryEvaluate<string>("Name", variables, out var itemName))
 							{
-								throw new ConfigurationException($"Creating items of type '{typeof(TItem).Name}' requires that the Name property is set.");
+								throw new ConfigurationException($"Creating items of type '{typeof(TItem).Name}' requires that the Name property is set and evaluated to a string.");
 							}
 
 							// Create any child items
@@ -550,25 +547,27 @@ namespace LogicMonitor.Provisioning
 							{
 								case nameof(Dashboard):
 									// Ensure that the name and id are set
-									if (item.CloneFromId is null)
+									if (
+											item.Type != ItemSpecType.CloneSingleFromId
+											|| !int.TryParse(item.Config, out var cloneFromIdValue))
 									{
-										throw new ConfigurationException($"Creating items of type '{typeof(TItem).Name}' requires that the CloneFromId property is set.");
+										throw new ConfigurationException($"Creating items of type '{typeof(TItem).Name}' requires that the CloneFromId property is set and evaluates as an integer.");
 									}
 
 									var originalDashboard = await logicMonitorClient
-										.GetAsync<Dashboard>(item.CloneFromId.Value, cancellationToken)
+										.GetAsync<Dashboard>(cloneFromIdValue, cancellationToken)
 										.ConfigureAwait(false);
 
 									var newDashboard = await logicMonitorClient
-										.CloneAsync(item.CloneFromId.Value,
+										.CloneAsync(cloneFromIdValue,
 										new DashboardCloneRequest
 										{
-											Name = string.IsNullOrWhiteSpace(item.Name)
-												? originalDashboard.Name
-												: item.Name.Evaluate<string>(variables),
-											Description = string.IsNullOrWhiteSpace(item.Description)
-												? originalDashboard.Description
-												: item.Description.Evaluate<string>(variables),
+											Name = item.Fields.TryEvaluate<string>("Name", variables, out var name)
+												? name
+												: originalDashboard.Name,
+											Description = item.Fields.TryEvaluate<string>("Description", variables, out var description)
+												? description
+												: originalDashboard.Description,
 											DashboardGroupId = currentGroup.Id,
 											WidgetsConfig = originalDashboard.WidgetsConfig,
 											WidgetsOrder = originalDashboard.WidgetsOrder
@@ -593,21 +592,22 @@ namespace LogicMonitor.Provisioning
 							childStructure,
 							variables,
 							currentGroup,
+							groupVariableName,
 							logger,
 							cancellationToken)
 							.ConfigureAwait(false);
 					}
 
+					variables[groupVariableName] = currentGroup.Id;
+
 					// Import any items
-					if (structure.ImportItemsFrom is not null)
-					{
-						await ImportItemsAsync<TGroup, TItem>(
-							logicMonitorClient,
-							currentGroup,
-							structure.ImportItemsFrom,
-							cancellationToken)
-							.ConfigureAwait(false);
-					}
+					await ImportItemsAsync<TGroup, TItem>(
+						logicMonitorClient,
+						currentGroup,
+						structure.Items,
+						variables,
+						cancellationToken)
+						.ConfigureAwait(false);
 
 					break;
 				default:
@@ -616,33 +616,76 @@ namespace LogicMonitor.Provisioning
 					logger.LogError(message);
 					throw new ConfigurationException(message);
 			}
-
-			return currentGroup.Id;
 		}
 
 		private static async Task ImportItemsAsync<TGroup, TItem>(
 			LogicMonitorClient logicMonitorClient,
 			TGroup currentGroup,
-			string importItemsFrom,
+			List<ItemSpec>? itemSpecs,
+			Dictionary<string, object?> variables,
 			CancellationToken cancellationToken)
 			where TGroup : IdentifiedItem, IHasEndpoint, new()
 			where TItem : IdentifiedItem, IHasEndpoint, new()
 		{
-			var fileAndSheetInfo = new FileAndSheetInfo(importItemsFrom);
-			using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
-			magicSpreadsheet.Load();
-
-			switch (currentGroup)
+			if (itemSpecs is null)
 			{
-				case NetscanGroup netscanGroup:
-					// Create netscan groups from spreadsheet
-					var netscanCreationDtos = magicSpreadsheet.GetExtendedList<NetscanCreationDto>(fileAndSheetInfo.SheetName);
-					foreach (var netscanCreationDto in netscanCreationDtos)
-					{
-						await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto.Item, cancellationToken)
-							.ConfigureAwait(false);
-					}
-					break;
+				return;
+			}
+			foreach (var itemSpec in itemSpecs)
+			{
+				switch (itemSpec.Type)
+				{
+					case ItemSpecType.XlsxMulti:
+						{
+							var fileAndSheetInfo = new FileAndSheetInfo(
+								itemSpec.Config?.Evaluate<string>(variables)
+								?? throw new ConfigurationException($"{ItemSpecType.XlsxMulti} import items should have the config set."));
+							using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
+							magicSpreadsheet.Load();
+
+							switch (currentGroup)
+							{
+								case NetscanGroup netscanGroup:
+									// Create netscan groups from spreadsheet
+									var objectList = magicSpreadsheet
+										.GetExtendedList<object>(fileAndSheetInfo.SheetName);
+									var netscanCreationDtos = await objectList.Where(obj => !obj.Properties.Any(p => p.Key == "Include" && p.Value is bool include && !include))
+										.EvaluateAsync<NetscanCreationDto>(
+											itemSpec,
+											logicMonitorClient,
+											variables,
+											cancellationToken)
+										.ConfigureAwait(false);
+
+									foreach (var netscanCreationDto in netscanCreationDtos)
+									{
+										// Delete any existing
+										var existingNetscans = await logicMonitorClient.GetAllAsync(
+											new Filter<Netscan>
+											{
+												FilterItems = new List<FilterItem<Netscan>>{
+													new Eq<Netscan>(nameof(Netscan.GroupId), netscanCreationDto.GroupId),
+													new Eq<Netscan>(nameof(Netscan.Name), netscanCreationDto.Name),
+												}
+											},
+											cancellationToken)
+											.ConfigureAwait(false);
+										if (existingNetscans.Count == 1)
+										{
+											await logicMonitorClient.DeleteAsync(existingNetscans[0], cancellationToken: cancellationToken)
+												.ConfigureAwait(false);
+										}
+										// Create the new one
+										await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
+											.ConfigureAwait(false);
+									}
+									break;
+							}
+						}
+						break;
+					default:
+						throw new NotSupportedException($"ItemSpec type {itemSpec.Type} not supported.");
+				}
 			}
 		}
 

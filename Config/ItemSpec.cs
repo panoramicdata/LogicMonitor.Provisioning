@@ -1,11 +1,27 @@
+using System.Collections.Generic;
+
 namespace LogicMonitor.Provisioning.Config
 {
 	public class ItemSpec
 	{
-		public string Name { get; set; } = string.Empty;
+		/// <summary>
+		/// The type
+		/// </summary>
+		public ItemSpecType Type { get; set; }
 
-		public int? CloneFromId { get; set; }
+		/// <summary>
+		/// Varies by type.  Evaluated.
+		/// </summary>
+		public string? Config { get; set; }
 
-		public string Description { get; set; } = string.Empty;
+		/// <summary>
+		/// Used for fields.  Each is evaluated.
+		/// </summary>
+		public Dictionary<string, string> Fields { get; set; } = new();
+
+		/// <summary>
+		/// Used for properties.  Each is evaluated.
+		/// </summary>
+		public Dictionary<string, string> Properties { get; set; } = new();
 	}
 }
