@@ -345,19 +345,38 @@ namespace LogicMonitor.Provisioning
 			switch (mode)
 			{
 				case Mode.Create:
-					var roleGroupId = variables.TryGetValue("roleGroupId", out var roleGroupIdNullable) ? roleGroupIdNullable as int? : null;
+					var roleGroupId = (variables.TryGetValue("roleGroupId", out var roleGroupIdNullable) ? roleGroupIdNullable as int? : null) ?? 0;
 					foreach (var roleConfiguration in roleConfigurations.Where(rc => rc.Condition.Evaluate(variables) as bool? == true))
 					{
 						// Set up roles
+						var roleName = roleConfiguration.Name.Evaluate<string>(variables);
+
+						// Remove any existing role
+						var existingRoles = await logicMonitorClient.GetAllAsync<Role>(
+							new Filter<Role>
+							{
+								FilterItems = new List<FilterItem<Role>>
+								{
+									new Eq<Role>(nameof(Role.Name), roleName),
+									new Eq<Role>(nameof(Role.RoleGroupId), roleGroupId),
+								}
+							}, cancellationToken
+							).ConfigureAwait(false);
+						if (existingRoles?.Count > 0)
+						{
+							await logicMonitorClient.DeleteAsync(existingRoles[0], cancellationToken: cancellationToken)
+								.ConfigureAwait(false);
+						}
+
 						var roleCreationDto = new RoleCreationDto
 						{
 							RequireEULA = roleConfiguration.IsEulaRequired.Evaluate<bool>(variables),
 							TwoFactorAuthenticationRequired = roleConfiguration.IsTwoFactorAuthenticationRequired.Evaluate<bool>(variables),
-							Name = roleConfiguration.Name.Evaluate<string>(variables),
+							Name = roleName,
 							Description = roleConfiguration.Description.Evaluate<string>(variables),
 							CustomHelpLabel = roleConfiguration.CustomHelpLabel.Evaluate<string>(variables),
 							CustomHelpUrl = roleConfiguration.CustomHelpUrl.Evaluate<string>(variables),
-							RoleGroupId = roleGroupId ?? 0,
+							RoleGroupId = roleGroupId,
 							Privileges = new(),
 						};
 
@@ -393,7 +412,7 @@ namespace LogicMonitor.Provisioning
 								roleConfiguration.AccessLevel),
 							new (
 								PrivilegeObjectType.Setting,
-								roleGroupId.HasValue ? $"role.{roleGroupId}" : null,
+								$"role.{roleGroupId}",
 								RolePrivilegeOperation.Read),
 							new (
 								PrivilegeObjectType.Help,
