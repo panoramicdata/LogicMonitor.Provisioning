@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "LogicMonitor.Provisioning": {
-      "commandName": "Project",
-      "commandLineArgs": "F:\\Projects\\LogicMonitor.Provisioning\\appsettings.json"
-    }
-  }
-}
