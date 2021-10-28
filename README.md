@@ -8,7 +8,7 @@ a customer or site in a LogicMonitor system.
 ## Regular Users
 
 Most users will find it easiest to just install the tool and run it.  To do so:
-1. Download the MSI [here](https://github.com/panoramicdata/LogicMonitor.Provisioning/Installer/).
+1. Download the MSI [here](https://github.com/panoramicdata/LogicMonitor.Provisioning/blob/main/Installer/LogicMonitor.Provisioning.Setup.msi).
 2. Run the installer
 3. Press [Windows] and type "LogicMonitor P"
 4. Select "LogicMonitor Provisioning Folder"
