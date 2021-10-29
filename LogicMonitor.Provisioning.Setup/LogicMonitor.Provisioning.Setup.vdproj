@@ -15,7 +15,7 @@
     {
         "Entry"
         {
-        "MsmKey" = "8:_0F1D4E42EC8C4602901F7051F5F0894A"
+        "MsmKey" = "8:_2A9A8C5906454057A8BB82E25D5EAAA4"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -27,7 +27,19 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_DD009A72EA7C48D6AEDFF7601F9E0D38"
+        "MsmKey" = "8:_D07DB708530F4F719F8A1C14969315E1"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_D34435D6F242433C9A10A8BF2C945FB7"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_D718C4CD90C6459BA66504B7BFAF157A"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -128,10 +140,10 @@
         }
         "File"
         {
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0F1D4E42EC8C4602901F7051F5F0894A"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2A9A8C5906454057A8BB82E25D5EAAA4"
             {
-            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net60\\LogicMonitor.Provisioning.exe"
-            "TargetName" = "8:LogicMonitor.Provisioning.exe"
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net60\\win-x64\\LogicMonitor.Provisioning.runtimeconfig.json"
+            "TargetName" = "8:LogicMonitor.Provisioning.runtimeconfig.json"
             "Tag" = "8:"
             "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
             "Condition" = "8:"
@@ -168,6 +180,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D07DB708530F4F719F8A1C14969315E1"
+            {
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net60\\win-x64\\LogicMonitor.Provisioning.deps.json"
+            "TargetName" = "8:LogicMonitor.Provisioning.deps.json"
+            "Tag" = "8:"
+            "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
         }
         "FileType"
         {
@@ -187,7 +219,7 @@
             }
             "{3C67513D-01DD-4637-8A68-80971EB9504F}:_3C8F24AD6B964D01BD489D6CD5112288"
             {
-            "DefaultLocation" = "8:[ProgramFilesFolder][Manufacturer]\\[ProductName]"
+            "DefaultLocation" = "8:[ProgramFiles64Folder][Manufacturer]\\[ProductName]"
             "Name" = "8:#1925"
             "AlwaysCreate" = "11:TRUE"
             "Condition" = "8:"
@@ -224,15 +256,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:LogicMonitor.Provisioning"
-        "ProductCode" = "8:{7AFEAB8D-4290-4C13-AACA-7175F8EB0BCA}"
-        "PackageCode" = "8:{D3A5DD3A-31D1-44ED-8FD4-1274BD9BF298}"
+        "ProductCode" = "8:{71F833A1-30D4-4895-94EF-C40F5364D607}"
+        "PackageCode" = "8:{7B29639D-9433-4201-B6F6-DF9640CD2B49}"
         "UpgradeCode" = "8:{84E8720B-C108-4AA3-AD17-AA78DD042A5D}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.2"
+        "ProductVersion" = "8:1.0.3"
         "Manufacturer" = "8:Panoramic Data Limited"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:https://www.panoramicdata.com/support"
@@ -242,11 +274,11 @@
         "Keywords" = "8:logicmonitor provisioning"
         "ARPCOMMENTS" = "8:A LogicMonitor provisioning system"
         "ARPURLINFOABOUT" = "8:https://www.panoramicdata.com/"
-        "ARPPRODUCTICON" = "8:_0F1D4E42EC8C4602901F7051F5F0894A"
+        "ARPPRODUCTICON" = "8:_D718C4CD90C6459BA66504B7BFAF157A"
         "ARPIconIndex" = "3:32512"
         "SearchPath" = "8:"
         "UseSystemSearchPath" = "11:TRUE"
-        "TargetPlatform" = "3:0"
+        "TargetPlatform" = "3:1"
         "PreBuildEvent" = "8:"
         "PostBuildEvent" = "8:copy \"$(BuiltOuputPath)\" \"$(ProjectDir)\\..\\Installer\""
         "RunPostBuildEvent" = "3:0"
@@ -353,10 +385,10 @@
             "ShowCmd" = "3:1"
             "IconIndex" = "3:32512"
             "Transitive" = "11:FALSE"
-            "Target" = "8:_0F1D4E42EC8C4602901F7051F5F0894A"
+            "Target" = "8:_D718C4CD90C6459BA66504B7BFAF157A"
             "Folder" = "8:_540D8024172342C59ECDD4E74D04F443"
             "WorkingFolder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
-            "Icon" = "8:_0F1D4E42EC8C4602901F7051F5F0894A"
+            "Icon" = "8:_D718C4CD90C6459BA66504B7BFAF157A"
             "Feature" = "8:"
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_83F97B2AEC544D558DE10737AB26D0E2"
@@ -777,7 +809,35 @@
         }
         "ProjectOutput"
         {
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_49A7E34DDAE842ECB6C5BB7E1C1EA27D"
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_4167F56D1CD341C8B9D72635EB94DD3B"
+            {
+            "SourcePath" = "8:"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            "ProjectOutputGroupRegister" = "3:1"
+            "OutputConfiguration" = "8:"
+            "OutputGroupCanonicalName" = "8:Symbols"
+            "OutputProjectGuid" = "8:{73D862F8-41E5-46F7-B40F-886161BF9476}"
+            "ShowKeyOutput" = "11:TRUE"
+                "ExcludeFilters"
+                {
+                }
+            }
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_9D1821B7099C4B1495897900E995C03E"
             {
             "SourcePath" = "8:"
             "TargetName" = "8:"
@@ -805,9 +865,9 @@
                 {
                 }
             }
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_6C71C0D0DD024B11B2408B8CC9DCA70D"
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_D34435D6F242433C9A10A8BF2C945FB7"
             {
-            "SourcePath" = "8:"
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\obj\\Release\\net60\\win-x64\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
@@ -826,16 +886,16 @@
             "IsolateTo" = "8:"
             "ProjectOutputGroupRegister" = "3:1"
             "OutputConfiguration" = "8:"
-            "OutputGroupCanonicalName" = "8:BuiltProjectOutputGroupDependencies"
+            "OutputGroupCanonicalName" = "8:PublishItems"
             "OutputProjectGuid" = "8:{73D862F8-41E5-46F7-B40F-886161BF9476}"
             "ShowKeyOutput" = "11:TRUE"
                 "ExcludeFilters"
                 {
                 }
             }
-            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_DD009A72EA7C48D6AEDFF7601F9E0D38"
+            "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_D718C4CD90C6459BA66504B7BFAF157A"
             {
-            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\obj\\Release\\net60\\LogicMonitor.Provisioning.dll"
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\obj\\Release\\net60\\win-x64\\LogicMonitor.Provisioning.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
