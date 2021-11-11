@@ -149,15 +149,21 @@ namespace LogicMonitor.Provisioning.Extensions
 			{
 				netscanCreationDto.Credentials = new();
 			}
+
 			if (netscanCreationDto.Ddr is null)
 			{
 				netscanCreationDto.Ddr = new();
 			}
+
 			if (netscanCreationDto.Ddr.Assignment is null)
 			{
-				netscanCreationDto.Ddr.Assignment = new();
+				netscanCreationDto.Ddr.Assignment = new List<NetscanAssignment>
+				{
+					new NetscanAssignment()
+				};
 				netscanCreationDto.Ddr.Assignment.Add(new());
 			}
+
 			if (netscanCreationDto.Schedule is null)
 			{
 				netscanCreationDto.Schedule = new NetscanSchedule
@@ -169,6 +175,7 @@ namespace LogicMonitor.Provisioning.Extensions
 					TimeZone = "America/New_York"
 				};
 			}
+
 			if (netscanCreationDto.DuplicatesStrategy is null)
 			{
 				netscanCreationDto.DuplicatesStrategy = new NetscanDuplicatesStrategy
@@ -178,6 +185,7 @@ namespace LogicMonitor.Provisioning.Extensions
 					Collectors = new()
 				};
 			}
+
 			if (netscanCreationDto.Ports is null)
 			{
 				netscanCreationDto.Ports = new NetscanPorts

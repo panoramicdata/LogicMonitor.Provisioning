@@ -62,14 +62,14 @@ namespace LogicMonitor.Provisioning
 			IOptions<Configuration> options,
 			ILogger<Application> logger)
 		{
-			// Store the config
+			// Store the configuration
 			_config = options.Value;
 
 			var validator = new ConfigurationValidator();
 			var validationResult = validator.Validate(_config);
 			if (!validationResult.IsValid)
 			{
-				throw new ArgumentException("Invalid configuation:\n" + string.Join("\n", validationResult.Errors.Select(e => e.ErrorMessage)));
+				throw new ArgumentException("Invalid configuration:\n" + string.Join("\n", validationResult.Errors.Select(e => e.ErrorMessage)));
 			}
 
 			// Create a portal client
@@ -154,11 +154,11 @@ namespace LogicMonitor.Provisioning
 			switch (repetition.Type)
 			{
 				case RepetitionType.None:
-					// Is the Config is set
+					// Is the Configuration set
 					if (!string.IsNullOrWhiteSpace(repetition.Config))
 					{
 						// Yes - this is not supported
-						throw new ConfigurationException($"Unexpected repetition config for repetition type: '{repetition.Type}'");
+						throw new ConfigurationException($"Unexpected repetition configuration for repetition type: '{repetition.Type}'");
 					}
 					// Return a single item
 					return new List<Dictionary<string, object?>>()
@@ -167,9 +167,9 @@ namespace LogicMonitor.Provisioning
 				};
 				case RepetitionType.Xlsx:
 					{
-						// Try to parse the config
+						// Try to parse the configuration
 						var evaluatedConfig = repetition.Config.Evaluate<string>(variables);
-						var fileAndSheetInfo = new FileAndSheetInfo(evaluatedConfig ?? throw new ConfigurationException("Xlsx config should evaluate to a string."));
+						var fileAndSheetInfo = new FileAndSheetInfo(evaluatedConfig ?? throw new ConfigurationException("XLSx configuration should evaluate to a string."));
 
 						using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
 						magicSpreadsheet.Load();
@@ -701,6 +701,7 @@ namespace LogicMonitor.Provisioning
 												.ConfigureAwait(false);
 										}
 										// Create the new one
+										netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
 										await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
 											.ConfigureAwait(false);
 									}
