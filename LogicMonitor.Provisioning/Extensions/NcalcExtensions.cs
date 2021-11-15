@@ -1,4 +1,5 @@
 using LogicMonitor.Api;
+using LogicMonitor.Api.Devices;
 using LogicMonitor.Api.Netscans;
 using LogicMonitor.Provisioning.Config;
 using PanoramicData.NCalcExtensions;
@@ -69,6 +70,8 @@ namespace LogicMonitor.Provisioning.Extensions
 								case NetscanCreationDto netscanCreationDto:
 									Prep(netscanCreationDto);
 									netscanCreationDto.Credentials.DeviceGroupId = (int)value;
+									netscanCreationDto.Credentials.Custom = new List<object>().ToArray();
+									netscanCreationDto.Credentials.DeviceGroupName = (await logicMonitorClient.GetAsync<DeviceGroup>((int)value, cancellationToken).ConfigureAwait(false)).FullPath;
 									break;
 								default:
 									throw new NotSupportedException($"Credentials.DeviceGroupId can only be set on a {nameof(NetscanCreationDto)}");
@@ -94,6 +97,7 @@ namespace LogicMonitor.Provisioning.Extensions
 										.GetDeviceGroupByFullPathAsync((string)value, cancellationToken)
 										.ConfigureAwait(false)) ?? throw new ConfigurationException($"No such device group '{value}'");
 									netscanCreationDto.Ddr.Assignment[0].DeviceGroupId = deviceGroup.Id;
+									netscanCreationDto.Ddr.Assignment[0].DeviceGroupName = deviceGroup.FullPath;
 									break;
 								default:
 									throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
@@ -159,7 +163,12 @@ namespace LogicMonitor.Provisioning.Extensions
 			{
 				netscanCreationDto.Ddr.Assignment = new List<NetscanAssignment>
 				{
-					new NetscanAssignment()
+					new NetscanAssignment
+					{
+						DisableAlerting = false,
+						InclusionType = NetscanInclusionType.Include,
+						Query = string.Empty
+					}
 				};
 			}
 
