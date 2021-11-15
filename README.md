@@ -18,11 +18,17 @@ Most users will find it easiest to just install the tool and run it.  To do so:
 
 ## Developers
 
-From Visual Studio:
-1. Clone the project from Github to your local machine
-2. Open the .sln file in Visual Studio Community 2022 onwards
-3. Follow the configuration instructions below
-4. Run in debug mode
+To run in debug:
+1. Install Visual Studio 2022 (Community is fine)
+2. Clone the project from Github to your local machine
+3. Open the .sln file
+4. Follow the configuration instructions below
+5. Run in debug mode
+
+To create the installer:
+1. Ensure that the "Microsoft Visual Studio Installer Projects" extension is installed
+2. Build the LogicMonitor.Provisioning.Setup project in the "Release" configuration
+3. This will create an MSI file in the LogicMonitor.Provisioning.Setup/Release folder
 
 ## Configuration
 
