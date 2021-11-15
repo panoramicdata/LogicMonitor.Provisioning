@@ -161,7 +161,6 @@ namespace LogicMonitor.Provisioning.Extensions
 				{
 					new NetscanAssignment()
 				};
-				netscanCreationDto.Ddr.Assignment.Add(new());
 			}
 
 			if (netscanCreationDto.Schedule is null)

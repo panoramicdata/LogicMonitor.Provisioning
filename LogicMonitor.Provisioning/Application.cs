@@ -702,6 +702,7 @@ namespace LogicMonitor.Provisioning
 										}
 										// Create the new one
 										netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
+										netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
 										await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
 											.ConfigureAwait(false);
 									}
