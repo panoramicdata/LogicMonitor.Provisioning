@@ -1,14 +1,13 @@
 using FluentValidation;
 
-namespace LogicMonitor.Provisioning.Config.Validators
+namespace LogicMonitor.Provisioning.Config.Validators;
+
+internal class LogicMonitorCredentialsValidator : AbstractValidator<LogicMonitorCredentials>
 {
-	internal class LogicMonitorCredentialsValidator : AbstractValidator<LogicMonitorCredentials>
+	public LogicMonitorCredentialsValidator()
 	{
-		public LogicMonitorCredentialsValidator()
-		{
-			RuleFor(c => c.Account).NotEmpty();
-			RuleFor(c => c.AccessId).NotEmpty();
-			RuleFor(c => c.AccessKey).NotEmpty();
-		}
+		RuleFor(c => c.Account).NotEmpty();
+		RuleFor(c => c.AccessId).NotEmpty();
+		RuleFor(c => c.AccessKey).NotEmpty();
 	}
 }

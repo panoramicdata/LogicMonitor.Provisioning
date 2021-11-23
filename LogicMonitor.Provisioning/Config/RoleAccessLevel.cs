@@ -1,23 +1,22 @@
-namespace LogicMonitor.Provisioning.Config
+namespace LogicMonitor.Provisioning.Config;
+
+/// <summary>
+/// Role access level
+/// </summary>
+public enum RoleAccessLevel
 {
 	/// <summary>
-	/// Role access level
+	/// No access
 	/// </summary>
-	public enum RoleAccessLevel
-	{
-		/// <summary>
-		/// No access
-		/// </summary>
-		None,
+	None,
 
-		/// <summary>
-		/// View only access
-		/// </summary>
-		View,
+	/// <summary>
+	/// View only access
+	/// </summary>
+	View,
 
-		/// <summary>
-		/// View and manage access
-		/// </summary>
-		Manage
-	}
+	/// <summary>
+	/// View and manage access
+	/// </summary>
+	Manage
 }

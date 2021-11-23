@@ -21,6 +21,7 @@ trim_trailing_whitespace = true
 
 # XML Project Files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
+csharp_style_namespace_declarations=file_scoped:silent
 
 # XML Configuration Files
 [*.{xml,config,props,targets,nuspec,resx,ruleset,vsixmanifest,vsct}]

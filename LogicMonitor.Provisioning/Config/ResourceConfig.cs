@@ -1,6 +1,5 @@
-namespace LogicMonitor.Provisioning.Config
+namespace LogicMonitor.Provisioning.Config;
+
+public class ResourceConfig : NamedItem
 {
-	public class ResourceConfig : NamedItem
-	{
-	}
 }

@@ -1,9 +1,8 @@
-namespace LogicMonitor.Provisioning.Config
+namespace LogicMonitor.Provisioning.Config;
+
+public enum Mode
 {
-	public enum Mode
-	{
-		Menu,
-		Create,
-		Delete
-	}
+	Menu,
+	Create,
+	Delete
 }

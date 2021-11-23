@@ -1,6 +1,5 @@
-﻿namespace LogicMonitor.Provisioning.Config
+namespace LogicMonitor.Provisioning.Config;
+
+public class WebsiteConfig
 {
-	public class WebsiteConfig
-	{
-	}
 }
