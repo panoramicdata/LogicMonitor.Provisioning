@@ -1,5 +1,3 @@
-using LogicMonitor.Api.Users;
-
 namespace LogicMonitor.Provisioning;
 
 internal class RoleSpec

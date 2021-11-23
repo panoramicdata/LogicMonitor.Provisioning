@@ -1,5 +1,3 @@
-using FluentValidation;
-
 namespace LogicMonitor.Provisioning.Config.Validators;
 
 internal class RepetitionValidator : AbstractValidator<Repetition>

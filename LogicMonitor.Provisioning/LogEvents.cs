@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 namespace LogicMonitor.Provisioning;
 
 internal static class LogEvents

@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace LogicMonitor.Provisioning.Extensions;
 
 internal static class StringExtensions

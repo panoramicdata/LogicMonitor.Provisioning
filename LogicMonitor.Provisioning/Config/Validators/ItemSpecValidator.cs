@@ -1,6 +1,3 @@
-using FluentValidation;
-using System.Linq;
-
 namespace LogicMonitor.Provisioning.Config.Validators;
 
 internal class ItemSpecValidator : AbstractValidator<ItemSpec>

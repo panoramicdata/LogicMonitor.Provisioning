@@ -1,13 +1,3 @@
-using FluentValidation;
-using LogicMonitor.Api.Collectors;
-using LogicMonitor.Api.Dashboards;
-using LogicMonitor.Api.Devices;
-using LogicMonitor.Api.Netscans;
-using LogicMonitor.Api.Reports;
-using LogicMonitor.Api.Topologies;
-using LogicMonitor.Api.Users;
-using LogicMonitor.Api.Websites;
-
 namespace LogicMonitor.Provisioning.Config.Validators;
 
 internal class ConfigurationValidator : AbstractValidator<Configuration>
