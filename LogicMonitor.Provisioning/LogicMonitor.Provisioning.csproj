@@ -19,17 +19,17 @@
 	  <Content Include="data.example.xlsx" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="FluentValidation" Version="10.3.4" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="5.0.0" />
-		<PackageReference Include="LogicMonitor.Api" Version="2.154.5" />
-		<PackageReference Include="PanoramicData.NCalcExtensions" Version="1.17.7" />
+		<PackageReference Include="FluentValidation" Version="10.3.5" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="6.0.0" />
+		<PackageReference Include="LogicMonitor.Api" Version="2.161.10" />
+		<PackageReference Include="PanoramicData.NCalcExtensions" Version="1.17.14" />
 		<PackageReference Include="PanoramicData.SheetMagic" Version="3.0.45" />
-		<PackageReference Include="Roslynator.Analyzers" Version="3.2.2">
+		<PackageReference Include="Roslynator.Analyzers" Version="3.3.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
