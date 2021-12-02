@@ -610,6 +610,7 @@ internal class Application : IHostedService
 					currentGroup,
 					structure.Items,
 					variables,
+					logger,
 					cancellationToken)
 					.ConfigureAwait(false);
 
@@ -625,6 +626,7 @@ internal class Application : IHostedService
 		TGroup currentGroup,
 		List<ItemSpec>? itemSpecs,
 		Dictionary<string, object?> variables,
+		ILogger logger,
 		CancellationToken cancellationToken)
 		where TGroup : IdentifiedItem, IHasEndpoint, new()
 		where TItem : IdentifiedItem, IHasEndpoint, new()
@@ -661,27 +663,34 @@ internal class Application : IHostedService
 
 								foreach (var netscanCreationDto in netscanCreationDtos)
 								{
-									// Delete any existing
-									var existingNetscans = await logicMonitorClient.GetAllAsync(
-										new Filter<Netscan>
-										{
-											FilterItems = new List<FilterItem<Netscan>>{
+									try
+									{
+										// Delete any existing
+										var existingNetscans = await logicMonitorClient.GetAllAsync(
+											new Filter<Netscan>
+											{
+												FilterItems = new List<FilterItem<Netscan>>{
 													new Eq<Netscan>(nameof(Netscan.GroupId), netscanCreationDto.GroupId),
 													new Eq<Netscan>(nameof(Netscan.Name), netscanCreationDto.Name),
-											}
-										},
-										cancellationToken)
-										.ConfigureAwait(false);
-									if (existingNetscans.Count == 1)
-									{
-										await logicMonitorClient.DeleteAsync(existingNetscans[0], cancellationToken: cancellationToken)
+												}
+											},
+											cancellationToken)
+											.ConfigureAwait(false);
+										if (existingNetscans.Count == 1)
+										{
+											await logicMonitorClient.DeleteAsync(existingNetscans[0], cancellationToken: cancellationToken)
+												.ConfigureAwait(false);
+										}
+										// Create the new one
+										netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
+										netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
+										await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
 											.ConfigureAwait(false);
 									}
-									// Create the new one
-									netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
-									netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
-									await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
-										.ConfigureAwait(false);
+									catch (Exception ex)
+									{
+										logger.LogError(ex, "Could not create {type} due to {message}", typeof(TItem), ex.Message);
+									}
 								}
 								break;
 						}

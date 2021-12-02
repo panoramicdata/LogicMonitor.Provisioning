@@ -26,7 +26,11 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="6.0.0" />
-		<PackageReference Include="LogicMonitor.Api" Version="2.161.10" />
+		<PackageReference Include="LogicMonitor.Api" Version="2.161.11" />
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.4.244">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="PanoramicData.NCalcExtensions" Version="1.17.14" />
 		<PackageReference Include="PanoramicData.SheetMagic" Version="3.0.45" />
 		<PackageReference Include="Roslynator.Analyzers" Version="3.3.0">
