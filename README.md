@@ -34,7 +34,8 @@ To create the installer:
 
 1. Copy the appsettings.example.json to appsettings.json in the same folder
 2. Copy the data.example.xlsx to data.xlsx in the same folder
-3. Edit the files as follows:
+3. Ensure that all tables in the XLSX file are formatted as tables.
+4. Edit the files as follows:
 
 ### appsettings.json
 

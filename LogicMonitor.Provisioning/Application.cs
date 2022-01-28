@@ -1,3 +1,5 @@
+using PanoramicData.SheetMagic.Exceptions;
+
 namespace LogicMonitor.Provisioning;
 
 /// <summary>
@@ -635,70 +637,78 @@ internal class Application : IHostedService
 		{
 			return;
 		}
-		foreach (var itemSpec in itemSpecs)
+
+		try
 		{
-			switch (itemSpec.Type)
+			foreach (var itemSpec in itemSpecs)
 			{
-				case ItemSpecType.XlsxMulti:
-					{
-						var fileAndSheetInfo = new FileAndSheetInfo(
-							itemSpec.Config?.Evaluate<string>(variables)
-							?? throw new ConfigurationException($"{ItemSpecType.XlsxMulti} import items should have the config set."));
-						using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
-						magicSpreadsheet.Load();
-
-						switch (currentGroup)
+				switch (itemSpec.Type)
+				{
+					case ItemSpecType.XlsxMulti:
 						{
-							case NetscanGroup netscanGroup:
-								// Create netscan groups from spreadsheet
-								var objectList = magicSpreadsheet
-									.GetExtendedList<object>(fileAndSheetInfo.SheetName);
-								var netscanCreationDtos = await objectList.Where(obj => !obj.Properties.Any(p => p.Key == "Include" && p.Value is bool include && !include))
-									.EvaluateAsync<NetscanCreationDto>(
-										itemSpec,
-										logicMonitorClient,
-										variables,
-										cancellationToken)
-									.ConfigureAwait(false);
+							var fileAndSheetInfo = new FileAndSheetInfo(
+								itemSpec.Config?.Evaluate<string>(variables)
+								?? throw new ConfigurationException($"{ItemSpecType.XlsxMulti} import items should have the config set."));
+							using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
+							magicSpreadsheet.Load();
 
-								foreach (var netscanCreationDto in netscanCreationDtos)
-								{
-									try
+							switch (currentGroup)
+							{
+								case NetscanGroup netscanGroup:
+									// Create netscan groups from spreadsheet
+									var objectList = magicSpreadsheet
+										.GetExtendedList<object>(fileAndSheetInfo.SheetName);
+									var netscanCreationDtos = await objectList.Where(obj => !obj.Properties.Any(p => p.Key == "Include" && p.Value is bool include && !include))
+										.EvaluateAsync<NetscanCreationDto>(
+											itemSpec,
+											logicMonitorClient,
+											variables,
+											cancellationToken)
+										.ConfigureAwait(false);
+
+									foreach (var netscanCreationDto in netscanCreationDtos)
 									{
-										// Delete any existing
-										var existingNetscans = await logicMonitorClient.GetAllAsync(
-											new Filter<Netscan>
-											{
-												FilterItems = new List<FilterItem<Netscan>>{
+										try
+										{
+											// Delete any existing
+											var existingNetscans = await logicMonitorClient.GetAllAsync(
+												new Filter<Netscan>
+												{
+													FilterItems = new List<FilterItem<Netscan>>{
 													new Eq<Netscan>(nameof(Netscan.GroupId), netscanCreationDto.GroupId),
 													new Eq<Netscan>(nameof(Netscan.Name), netscanCreationDto.Name),
-												}
-											},
-											cancellationToken)
-											.ConfigureAwait(false);
-										if (existingNetscans.Count == 1)
-										{
-											await logicMonitorClient.DeleteAsync(existingNetscans[0], cancellationToken: cancellationToken)
+													}
+												},
+												cancellationToken)
+												.ConfigureAwait(false);
+											if (existingNetscans.Count == 1)
+											{
+												await logicMonitorClient.DeleteAsync(existingNetscans[0], cancellationToken: cancellationToken)
+													.ConfigureAwait(false);
+											}
+											// Create the new one
+											netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
+											netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
+											await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
 												.ConfigureAwait(false);
 										}
-										// Create the new one
-										netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
-										netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
-										await logicMonitorClient.CreateAsync<Netscan>(netscanCreationDto, cancellationToken)
-											.ConfigureAwait(false);
+										catch (Exception ex)
+										{
+											logger.LogError(ex, "Could not create {type} due to {message}", typeof(TItem), ex.Message);
+										}
 									}
-									catch (Exception ex)
-									{
-										logger.LogError(ex, "Could not create {type} due to {message}", typeof(TItem), ex.Message);
-									}
-								}
-								break;
+									break;
+							}
 						}
-					}
-					break;
-				default:
-					throw new NotSupportedException($"ItemSpec type {itemSpec.Type} not supported.");
+						break;
+					default:
+						throw new NotSupportedException($"ItemSpec type {itemSpec.Type} not supported.");
+				}
 			}
+		}
+		catch (EmptyRowException e)
+		{
+			throw new Exception("One of the tables in use has empty rows or has not been correctly formatted a table in Excel.");
 		}
 	}
 
