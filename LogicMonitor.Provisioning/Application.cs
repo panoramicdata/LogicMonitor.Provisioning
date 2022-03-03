@@ -68,61 +68,70 @@ internal class Application : IHostedService
 
 	public async Task RunAsync(CancellationToken cancellationToken)
 	{
-		// Use _logger for logging
-		var mode = _config.Mode;
-		var repetition = _config.Repetition;
-		var variables = new Dictionary<string, object?>();
-		foreach (var kvp in _config.Variables)
+		try
 		{
-			variables[kvp.Key] = kvp.Value.Evaluate(variables);
-		}
-		_logger.LogInformation(LogEvents.ApplicationStart, "Application start.  Mode: '{mode}'", mode);
-		await Task
-			.Delay(TimeSpan.FromMilliseconds(100), cancellationToken)
-			.ConfigureAwait(false);
-
-		while (true)
-		{
-			while (mode == Mode.Menu)
+			// Use _logger for logging
+			var mode = _config.Mode;
+			var repetition = _config.Repetition;
+			var variables = new Dictionary<string, object?>();
+			foreach (var kvp in _config.Variables)
 			{
-				Console.WriteLine("____________");
-				Console.WriteLine("*** MENU ***");
-				Console.WriteLine();
-				Console.WriteLine("(C)reate");
-				Console.WriteLine("(D)elete");
-				Console.WriteLine("Ctrl+C: Exit");
-				Console.WriteLine("____________");
-				var modeInput = Console.ReadKey(true);
-				mode = modeInput.Key switch
-				{
-					ConsoleKey.C => Mode.Create,
-					ConsoleKey.D => Mode.Delete,
-					_ => Mode.Menu,
-				};
+				_logger.LogInformation("{Key}:{Value}", kvp.Key, kvp.Value);
+				variables[kvp.Key] = kvp.Value.Evaluate(variables);
 			}
-			_logger.LogInformation(LogEvents.ModeStart, "Mode start: {mode}", mode);
+			_logger.LogInformation(LogEvents.ApplicationStart, "Application start.  Mode: '{mode}'", mode);
+			await Task
+				.Delay(TimeSpan.FromMilliseconds(100), cancellationToken)
+				.ConfigureAwait(false);
 
-			foreach (var repetitionItem in GetRepetitionItems(repetition, variables))
+			while (true)
 			{
-				// Skip this row if the IsEnabled cell is set and
-				// - does not parse as a bool or
-				// - is set to "FALSE"
-				if (
-					repetitionItem.TryGetValue("IsEnabled", out var isEnabledValue)
-					&& (isEnabledValue is not bool isEnabledBool || !isEnabledBool)
-				)
+				while (mode == Mode.Menu)
 				{
-					// Skip this one
-					continue;
+					Console.WriteLine("____________");
+					Console.WriteLine("*** MENU ***");
+					Console.WriteLine();
+					Console.WriteLine("(C)reate");
+					Console.WriteLine("(D)elete");
+					Console.WriteLine("Ctrl+C: Exit");
+					Console.WriteLine("____________");
+					var modeInput = Console.ReadKey(true);
+					mode = modeInput.Key switch
+					{
+						ConsoleKey.C => Mode.Create,
+						ConsoleKey.D => Mode.Delete,
+						_ => Mode.Menu,
+					};
 				}
+				_logger.LogInformation(LogEvents.ModeStart, "Mode start: {mode}", mode);
 
-				await ProcessAsync(
-					mode,
-					repetitionItem,
-					cancellationToken)
-					.ConfigureAwait(false);
+				foreach (var repetitionItem in GetRepetitionItems(repetition, variables))
+				{
+					// Skip this row if the IsEnabled cell is set and
+					// - does not parse as a bool or
+					// - is set to "FALSE"
+					if (
+						repetitionItem.TryGetValue("IsEnabled", out var isEnabledValue)
+						&& (isEnabledValue is not bool isEnabledBool || !isEnabledBool)
+					)
+					{
+						// Skip this one
+						continue;
+					}
+
+					await ProcessAsync(
+						mode,
+						repetitionItem,
+						cancellationToken)
+						.ConfigureAwait(false);
+				}
+				mode = Mode.Menu;
 			}
-			mode = Mode.Menu;
+
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "{Message}", ex.Message);
 		}
 	}
 

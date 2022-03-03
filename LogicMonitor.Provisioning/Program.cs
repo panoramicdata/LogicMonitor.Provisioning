@@ -9,7 +9,7 @@ public static class Program
 			var builder = new HostBuilder()
 				.ConfigureAppConfiguration(config =>
 				{
-					config.AddJsonFile("appsettings.json", optional: true);
+					config.AddJsonFile(args.Length == 0 ? "appsettings.json" : args[0], optional: true);
 					config.AddEnvironmentVariables();
 
 					if (args != null)
