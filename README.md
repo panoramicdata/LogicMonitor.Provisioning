@@ -46,7 +46,7 @@ To complete this, you will need to [create a LogicMonitor API Token](https://www
 Configure your logicMonitor credentials as follows:
 * Account: this is the first part of your LogicMonitor URL. For example, 'acme' in https://acme.logicmonitor.com/.
 * AccessId: Add 
-* AccessKey: this is the first part of your LogicMonitor URL. For example, 'acme' in https://acme.logicmonitor.com/.
+* AccessKey: Add (You won't be able to view in LogicMonitor once the API key is saved)
 
 #### Variables
 These are tokens that can be repeated later on in your configuration.  Optional.
