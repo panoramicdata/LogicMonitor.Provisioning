@@ -2,7 +2,7 @@
   "profiles": {
 		"LogicMonitor.Provisioning": {
 			"commandName": "Project",
-			"commandLineArgs": "../../../appsettings.json"
+			"commandLineArgs": "../../../../appsettings.jsonc"
 		}
   }
 }

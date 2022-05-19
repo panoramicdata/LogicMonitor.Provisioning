@@ -1,0 +1,201 @@
+{
+	"Configuration": {
+		"Mode": "Menu",
+		"LogicMonitorCredentials": {
+			"Account": "acme",
+			"AccessId": "xxxxxxxxx",
+			"AccessKey": "yyyyyyyyy"
+		},
+		"Variables": {
+			"importFilePath": "'C:/Program Files (x86)/Panoramic Data Limited/LogicMonitor.Provisioning/data.example.xlsx'",
+			"importSheetName": "'Install order'"
+		},
+		"Repetition": {
+			"Type": "Xlsx",
+			"Config": "importFilePath + '|' + importSheetName"
+		},
+		"Collectors": {
+			"Condition": "true",
+			"Name": "Name",
+			"Description": "Name + ' collectors'"
+		},
+		"Dashboards": {
+			"Condition": "true",
+			"Name": "Name",
+			"Description": "Name + ' dashboards'",
+			"Parent": "'Sites'",
+			"Groups": [
+				{
+					"Name": "Name"
+				}
+			]
+		},
+		"Resources": {
+			"Name": "Name",
+			"Description": "Name + ' - site location'",
+			"Parent": "'Sites'",
+			"Groups": [
+				{
+					"Name": "'Admin'",
+					"Description": "Name + ' admin environment'",
+					"Groups": [
+						{
+							"Name": "'Network'",
+							"Description": "Name + ' admin network'"
+						},
+						{
+							"Name": "'Servers'",
+							"Description": "Name + ' admin servers'",
+							"AppliesTo": "'displayname =~ \"^' + ShortCode + 'WINSPC\"'"
+						}
+					]
+				},
+				{
+					"Name": "'Operations'",
+					"Description": "Name + ' operations'",
+					"Groups": [
+						{
+							"Name": "'ESX'",
+							"Description": "Name + ' operations ESX'"
+						},
+						{
+							"Name": "'Network Infrastructure'",
+							"Description": "Name + ' operations network'",
+							"Groups": [
+								{
+									"Name": "'iDRAC'",
+									"Description": "Name + ' operations iDRAC'",
+									"AppliesTo": "'displayname =~ \"^' + ShortCode + '.*IDRAC\"'"
+								},
+								{
+									"Name": "'Power'",
+									"Description": "Name + ' operations power'",
+									"AppliesTo": "'displayname =~ \"^' + ShortCode + '-(PDU|UPS)\"'"
+								},
+								{
+									"Name": "'Switches'",
+									"Description": "Name + ' operations switches'",
+									"AppliesTo": "'displayname =~ \"^' + ShortCode + '_[MI]DF.+ON\"'"
+								}
+							]
+						},
+						{
+							"Name": "'Servers'",
+							"Description": "Name + ' operations servers'",
+							"AppliesTo": "'displayname =~ \"^' + ShortCode + 'S.*(DC3|HIST|PATCH)\"'"
+						}
+					]
+				},
+				{
+					"Name": "'Production'",
+					"Description": "Name + ' production'",
+					"Groups": [
+						{
+							"Name": "'Network'",
+							"Description": "Name + ' production network'",
+							"AppliesTo": "'displayname =~ \"^' + ShortCode + '_[MI]DF.+PN\"'"
+						},
+						{
+							"Name": "'Servers'",
+							"Description": "Name + ' production servers'",
+							"AppliesTo": "'displayname =~ \"^' + ShortCode + 'S.*(DC3|HIST|PATCH)\"'"
+						}
+					]
+				},
+				{
+					"Name": "'Z - Imports'",
+					"Description": "Name + ' imports'"
+				}
+			],
+			"ImportItemsFrom": "importFilePath + ':Devices'",
+			"Properties": {
+				"snmp.version": "SnmpVersion",
+				"snmp.security": "SnmpSecurity",
+				"snmp.auth": "SnmpAuth",
+				"snmp.authToken": "SnmpAuthToken",
+				"snmp.priv": "SnmpPriv",
+				"snmp.privToken": "SnmpPrivToken",
+				"esx.user": "EsxUser",
+				"esx.pass": "EsxPassword",
+				"location": "Location"
+			}
+		},
+		"Mappings": {
+			"Name": "Name",
+			"Description": "Name + ' maps'",
+			"Condition": "true"
+		},
+		"Netscans": {
+			"Name": "Name",
+			"Description": "Name + ' netscans'",
+			"Condition": "true",
+			"Items": [
+				{
+					"Type": "XlsxMulti",
+					"Config": "importFilePath + '|' + Name",
+					"Fields": {
+						"Name": "Site + ' ' + Network + if(!isNull(VlanDescription) && VlanDescription != '', ' ' + VlanDescription, '')",
+						"Description": "Site + ' ' + Network + ' netscan'",
+						"Method": "'Icmp'",
+						"GroupId": "'' + netscanGroupId",
+						"CollectorId": "'' + CollectorId",
+						"SubnetScanRange": "VlanSubnet",
+						"ExcludedIpAddresses": "''",
+						"Credentials.DeviceGroupId": "deviceGroupId",
+						"Ddr.ChangeName": "'##REVERSEDNS##'",
+						"Ddr.Assignment[0].DeviceGroupName": "'Sites/' + Name + '/Z - Imports'",
+						"Ddr.Assignment[0].Type": "'All'"
+					}
+				}
+			]
+		},
+		"Reports": {
+			"Name": "Name",
+			"Description": "Name + ' reports'",
+			"Condition": "true"
+		},
+		"Roles": {
+			"Name": "Name",
+			"Description": "Name + ' roles'",
+			"Condition": "true",
+			"ImportItemsFrom": "importFilePath + ':Roles'"
+		},
+		"Users": {
+			"Name": "Name",
+			"Description": "Name + ' users'",
+			"Condition": "true",
+			"ImportItemsFrom": "importFilePath + ':Users'"
+		},
+		"Websites": {
+			"Name": "Name",
+			"Parent": "'Sites'",
+			"Description": "Name + ' websites'",
+			"Condition": "true",
+			"Groups": [
+				{
+					"Name": "'Internal'",
+					"Description": "Name + ' internal websites'"
+				},
+				{
+					"Name": "'External'",
+					"Description": "Name + ' external websites'"
+				}
+			],
+			"ImportItemsFrom": "importFilePath + ':Websites'"
+		},
+		"RoleConfigurations": [
+			{
+				"Name": "Name + ' - view'",
+				"Description": "'View only permissions for ' + Name",
+				"Condition": "true",
+				"AccessLevel": "Read"
+			},
+			{
+				"Name": "Name + ' - manage'",
+				"Description": "'Manage permissions for ' + Name",
+				"Condition": "true",
+				"AccessLevel": "Write"
+			}
+		]
+	}
+}

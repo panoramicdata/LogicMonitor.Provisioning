@@ -9,6 +9,7 @@ internal class FileAndSheetInfo
 		{
 			throw new ConfigurationException("Repetition config for file should be in the form 'filename|Sheetname'.");
 		}
+
 		FileInfo = new FileInfo(configDetails[0]);
 		SheetName = configDetails[1];
 		// We have the config details

@@ -13,6 +13,7 @@ internal static class NcalcExtensions
 				Value = kvp.Value.Evaluate(variableDictionary).ToString()
 			});
 		}
+
 		return newProperties;
 	}
 
@@ -23,10 +24,12 @@ internal static class NcalcExtensions
 		{
 			result[kvp.Key] = kvp.Value;
 		}
+
 		foreach (var kvp in additional)
 		{
 			result[kvp.Key] = kvp.Value;
 		}
+
 		return result;
 	}
 
@@ -64,6 +67,7 @@ internal static class NcalcExtensions
 							default:
 								throw new NotSupportedException($"Credentials.DeviceGroupId can only be set on a {nameof(NetscanCreationDto)}");
 						}
+
 						break;
 					case "Ddr.ChangeName":
 						switch (item)
@@ -75,6 +79,7 @@ internal static class NcalcExtensions
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
 						}
+
 						break;
 					case "Ddr.Assignment[0].DeviceGroupName":
 						switch (item)
@@ -90,6 +95,7 @@ internal static class NcalcExtensions
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
 						}
+
 						break;
 					case "Ddr.Assignment[0].Type":
 						switch (item)
@@ -106,6 +112,7 @@ internal static class NcalcExtensions
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
 						}
+
 						break;
 					default:
 						var propertyInfo = tOutPropertyInfos.SingleOrDefault(pi => pi.Name == propertyName)
@@ -127,11 +134,14 @@ internal static class NcalcExtensions
 								throw new ConfigurationException($"'{valueExpression}' evaluated to a {value.GetType().Name} ({value}) when setting {typeName}.{propertyName}, which is a '{propertyType.Name}'");
 							}
 						}
+
 						break;
 				}
 			}
+
 			list.Add(item);
 		}
+
 		return list;
 	}
 
