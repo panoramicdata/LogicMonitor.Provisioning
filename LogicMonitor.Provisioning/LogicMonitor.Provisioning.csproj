@@ -13,10 +13,12 @@
 	<ItemGroup>
 	  <None Remove="appsettings.example.jsonc" />
 	  <None Remove="appsettings.jsonc" />
+	  <None Remove="appsettings.volvo.jsonc" />
 	  <None Remove="data.example.xlsx" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Content Include="appsettings.jsonc" />
+	  <Content Include="appsettings.volvo.jsonc" />
 	  <Content Include="appsettings.example.jsonc" />
 	  <Content Include="data.example.xlsx" />
 	</ItemGroup>

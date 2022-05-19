@@ -131,7 +131,6 @@ internal class Application : IHostedService
 
 			mode = Mode.Menu;
 		 }
-
 	  }
 	  catch (Exception ex)
 	  {
