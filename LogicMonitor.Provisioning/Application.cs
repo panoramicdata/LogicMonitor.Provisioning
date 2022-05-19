@@ -199,36 +199,48 @@ internal class Application : IHostedService
 	  try
 	  {
 		 // Collectors
-		 await ProcessStructureAsync(
-			 _logicMonitorClient,
-			 mode,
-			 _config.Collectors,
-			 variables,
-			 null,
-			 "collectorGroupId",
-			 _logger,
-			 cancellationToken)
-			 .ConfigureAwait(false);
+		 if (_config.Collectors is not null)
+		 {
+			await ProcessStructureAsync(
+				_logicMonitorClient,
+				mode,
+				_config.Collectors,
+				variables,
+				null,
+				"collectorGroupId",
+				_logger,
+				cancellationToken)
+				.ConfigureAwait(false);
+		 }
 
 		 // Devices
-		 var parentDeviceGroup = _config.Resources?.Parent is null
-			 ? null
-			 : await _logicMonitorClient
-				 .GetDeviceGroupByFullPathAsync(_config.Resources.Parent.Evaluate<string>(variables), cancellationToken)
-				 .ConfigureAwait(false);
-		 await ProcessStructureAsync(
-			 _logicMonitorClient,
-			 mode,
-			 _config.Resources,
-			 variables,
-			 parentDeviceGroup,
-			 "deviceGroupId",
-			 _logger,
-			 cancellationToken)
-			 .ConfigureAwait(false);
+		 if (_config.Resources is not null)
+		 {
+			DeviceGroup? parentDeviceGroup = null;
+			if (_config.Resources.Parent is not null)
+			{
+			   var resourceGroupFullPath = _config.Resources.Parent.Evaluate<string>(variables) ?? throw new ConfigurationException("Parent resource group should evaluate to a string.");
+			   await _logicMonitorClient
+				   .GetDeviceGroupByFullPathAsync(resourceGroupFullPath, cancellationToken)
+				   .ConfigureAwait(false);
+			}
+
+			await ProcessStructureAsync(
+				_logicMonitorClient,
+				mode,
+				_config.Resources,
+				variables,
+				parentDeviceGroup,
+				"deviceGroupId",
+				_logger,
+				cancellationToken)
+				.ConfigureAwait(false);
+		 }
 
 		 // NetScans
-		 await ProcessStructureAsync(
+		 if (_config.Netscans is not null)
+		 {
+			await ProcessStructureAsync(
 			 _logicMonitorClient,
 			 mode,
 			 _config.Netscans,
@@ -238,9 +250,12 @@ internal class Application : IHostedService
 			 _logger,
 			 cancellationToken)
 			 .ConfigureAwait(false);
+		 }
 
 		 // Reports
-		 await ProcessStructureAsync(
+		 if (_config.Reports is not null)
+		 {
+			await ProcessStructureAsync(
 			 _logicMonitorClient,
 			 mode,
 			 _config.Reports,
@@ -250,43 +265,65 @@ internal class Application : IHostedService
 			 _logger,
 			 cancellationToken)
 			 .ConfigureAwait(false);
+		 }
 
 		 // Dashboards
-		 var parentDashboardGroup = _config.Dashboards?.Parent is null
-			 ? null
-			 : await _logicMonitorClient
-				 .GetDashboardGroupByFullPathAsync(_config.Dashboards.Parent.Evaluate<string>(variables), cancellationToken)
+		 if (_config.Dashboards is not null)
+		 {
+			DashboardGroup? parentDashboardGroup = null;
+			if (_config.Dashboards.Parent is not null)
+			{
+			   var dashboardGroupFullPath = _config.Dashboards.Parent.Evaluate<string>(variables)
+				  ?? throw new ConfigurationException("Parent dashboard group should evaluate to a string.");
+
+			   parentDashboardGroup = await _logicMonitorClient
+				 .GetDashboardGroupByFullPathAsync(dashboardGroupFullPath, cancellationToken)
 				 .ConfigureAwait(false);
-		 await ProcessStructureAsync(
-			 _logicMonitorClient,
-			 mode,
-			 _config.Dashboards,
-			 variables,
-			 parentDashboardGroup,
-			 "dashboardGroupId",
-			 _logger,
-			 cancellationToken)
-			 .ConfigureAwait(false);
+			}
+
+			await ProcessStructureAsync(
+				_logicMonitorClient,
+				mode,
+				_config.Dashboards,
+				variables,
+				parentDashboardGroup,
+				"dashboardGroupId",
+				_logger,
+				cancellationToken)
+				.ConfigureAwait(false);
+		 }
 
 		 // Websites
-		 var parentWebsiteGroup = _config.Websites?.Parent is null
-			 ? null
-			 : await _logicMonitorClient
-				 .GetWebsiteGroupByFullPathAsync(_config.Websites.Parent.Evaluate<string>(variables), cancellationToken)
-				 .ConfigureAwait(false);
-		 await ProcessStructureAsync(
-			 _logicMonitorClient,
-			 mode,
-			 _config.Websites,
-			 variables,
-			 parentWebsiteGroup,
-			 "websiteGroupId",
-			 _logger,
-			 cancellationToken)
-			 .ConfigureAwait(false);
+		 if (_config.Websites is not null)
+		 {
+			WebsiteGroup? parentWebsiteGroup = null;
+			if (_config.Websites.Parent is not null)
+			{
+			   var websitesGroupFullPath = _config.Websites.Parent.Evaluate<string>(variables)
+				  ?? throw new ConfigurationException("Parent websites group should evaluate to a string.");
+			   parentWebsiteGroup = _config.Websites.Parent is null
+				? null
+				: await _logicMonitorClient
+					.GetWebsiteGroupByFullPathAsync(websitesGroupFullPath, cancellationToken)
+					.ConfigureAwait(false);
+			}
+
+			await ProcessStructureAsync(
+				_logicMonitorClient,
+				mode,
+				_config.Websites,
+				variables,
+				parentWebsiteGroup,
+				"websiteGroupId",
+				_logger,
+				cancellationToken)
+				.ConfigureAwait(false);
+		 }
 
 		 // Roles
-		 await ProcessStructureAsync(
+		 if (_config.Roles is not null)
+		 {
+			await ProcessStructureAsync(
 			 _logicMonitorClient,
 			 mode,
 			 _config.Roles,
@@ -296,9 +333,12 @@ internal class Application : IHostedService
 			 _logger,
 			 cancellationToken)
 			 .ConfigureAwait(false);
+		 }
 
 		 // Users
-		 await ProcessStructureAsync(
+		 if (_config.Users is not null)
+		 {
+			await ProcessStructureAsync(
 			 _logicMonitorClient,
 			 mode,
 			 _config.Users,
@@ -308,9 +348,12 @@ internal class Application : IHostedService
 			 _logger,
 			 cancellationToken)
 			 .ConfigureAwait(false);
+		 }
 
 		 // Topologies
-		 await ProcessStructureAsync(
+		 if (_config.Mappings is not null)
+		 {
+			await ProcessStructureAsync(
 			 _logicMonitorClient,
 			 mode,
 			 _config.Mappings,
@@ -320,14 +363,19 @@ internal class Application : IHostedService
 			 _logger,
 			 cancellationToken)
 			 .ConfigureAwait(false);
+		 }
 
-		 await ProcessRoleConfigurationsAsync(
+		 // Role configurations
+		 if (_config.RoleConfigurations is not null)
+		 {
+			await ProcessRoleConfigurationsAsync(
 			 mode,
 			 _config.RoleConfigurations,
 			 variables,
 			 _logicMonitorClient,
 			 cancellationToken)
 			 .ConfigureAwait(false);
+		 }
 
 		 _logger.LogInformation("Complete.");
 	  }
@@ -450,7 +498,7 @@ internal class Application : IHostedService
    private static async Task ProcessStructureAsync<TGroup, TItem>(
 	   LogicMonitorClient logicMonitorClient,
 	   Mode mode,
-	   Structure<TGroup, TItem>? structure,
+	   Structure<TGroup, TItem> structure,
 	   Dictionary<string, object?> variables,
 	   TGroup? parentGroup,
 	   string groupVariableName,
@@ -459,12 +507,6 @@ internal class Application : IHostedService
 		   where TGroup : IdentifiedItem, IHasEndpoint, new()
 		   where TItem : IdentifiedItem, IHasEndpoint, new()
    {
-	  if (structure is null)
-	  {
-		 logger.LogInformation($"{typeof(TGroup).Name} structure is missing.");
-		 return;
-	  }
-
 	  if (!structure.Condition.Evaluate<bool>(variables))
 	  {
 		 logger.LogInformation(LogEvents.GroupProcessingDisabled, "Not processing {groupType}, as they are disabled.", typeof(TGroup));
