@@ -1,0 +1,12 @@
+{
+  "profiles": {
+	"Development": {
+	  "commandName": "Project",
+	  "commandLineArgs": "../../../../appsettings.jsonc"
+	},
+	"CompanyName": {
+	  "commandName": "Project",
+	  "commandLineArgs": "../../../../appsettings.companyName.jsonc"
+	}
+  }
+}
