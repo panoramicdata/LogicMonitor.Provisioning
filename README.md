@@ -8,34 +8,34 @@ a customer or site in a LogicMonitor system.
 ## Regular Users
 
 Most users will find it easiest to just install the tool and run it.  To do so:
-1. Download the MSI [here](https://github.com/panoramicdata/LogicMonitor.Provisioning/blob/main/Installer/LogicMonitor.Provisioning.Setup.msi).
-2. Run the installer
-3. Press [Windows] and type "LogicMonitor P"
-4. Select "LogicMonitor Provisioning Folder"
-5. Follow the configuration instructions below
-3. Press [Windows] and type "LogicMonitor P"
-4. Select "LogicMonitor Provisioning"
+1.	Download the MSI [here](https://github.com/panoramicdata/LogicMonitor.Provisioning/blob/main/Installer/LogicMonitor.Provisioning.Setup.msi).
+2.  Run the installer
+3.  Press [Windows] and type "LogicMonitor P"
+4.  Select "LogicMonitor Provisioning Folder"
+5.  Follow the configuration instructions below
+3.  Press [Windows] and type "LogicMonitor P"
+4.  Select "LogicMonitor Provisioning"
 
 ## Developers
 
 To run in debug:
-1. Install Visual Studio 2022 (Community is fine)
-2. Clone the project from Github to your local machine
-3. Open the .sln file
-4. Follow the configuration instructions below
-5. Run in debug mode
+1.  Install Visual Studio 2022 (Community is fine)
+2.  Clone the project from Github to your local machine
+3.  Open the .sln file
+4.  Follow the configuration instructions below
+5.  Run in debug mode
 
 To create the installer:
-1. Ensure that the "Microsoft Visual Studio Installer Projects" extension is installed
-2. Build the LogicMonitor.Provisioning.Setup project in the "Release" configuration
-3. This will create an MSI file in the LogicMonitor.Provisioning.Setup/Release folder
+1.  Ensure that the "Microsoft Visual Studio Installer Projects" extension is installed
+2.  Build the LogicMonitor.Provisioning.Setup project in the "Release" configuration
+3.  This will create an MSI file in the LogicMonitor.Provisioning.Setup/Release folder
 
 ## Configuration
 
-1. Copy the appsettings.example.json to appsettings.json in the same folder
-2. Copy the data.example.xlsx to data.xlsx in the same folder
-3. Ensure that all tables in the XLSX file are formatted as tables.
-4. Edit the files as follows:
+1.	Copy the appsettings.example.json to appsettings.json in the same folder
+2.	Copy the data.example.xlsx to data.xlsx in the same folder
+3.	Ensure that all tables in the XLSX file are formatted as tables.
+4.	Edit the files as follows:
 
 ### appsettings.json
 
@@ -44,18 +44,18 @@ To create the installer:
 To complete this, you will need to [create a LogicMonitor API Token](https://www.logicmonitor.com/support/settings/users-and-roles/api-tokens).
 
 Configure your logicMonitor credentials as follows:
-* Account: this is the first part of your LogicMonitor URL. For example, 'acme' in https://acme.logicmonitor.com/.
-* AccessId: Add 
-* AccessKey: Add (You won't be able to view in LogicMonitor once the API key is saved)
+*  Account: this is the first part of your LogicMonitor URL. For example, 'acme' in https://acme.logicmonitor.com/.
+*  AccessId: Add 
+*  AccessKey: Add (You won't be able to view in LogicMonitor once the API key is saved)
 
 #### Variables
 These are tokens that can be repeated later on in your configuration.  Optional.
 
 #### Repetition
 The entire configuration can be applied multiple times.
-* Type 'None': No repetition. 
-* Type 'Xlsx': Repeat the config for each row in the sheet specified in Config.
-* Config: for Xlsx repetition type, set this to &lt;import file path&gt;|&lt;sheet name&gt;  The config will be applied to all rows in the single talbe on that sheet.
+*  Type 'None': No repetition. 
+*  Type 'Xlsx': Repeat the config for each row in the sheet specified in Config.
+*  Config: for Xlsx repetition type, set this to &lt;import file path&gt;|&lt;sheet name&gt;  The config will be applied to all rows in the single talbe on that sheet.
 
 #### Collectors
 The specification of the Collector Group to create/delete.
@@ -90,11 +90,11 @@ The specification of the Role Configurations to create/delete.
 ### data.xlsx
 
 This file should contain multiple sheets:
-* One for repetition (if repetition type Xlsx is used)
-	* a sheet with a single table with two rows: one for customer 1, one for customer 2
-* One per list that you wish to manage, for example:
-  * one sheet with a single table containing all subnets for customer 1
-  * another sheet with a single table containing all subnets for customer 2
+*  One for repetition (if repetition type Xlsx is used)
+	*  a sheet with a single table with two rows: one for customer 1, one for customer 2
+*  One per list that you wish to manage, for example:
+  *  one sheet with a single table containing all subnets for customer 1
+  *  another sheet with a single table containing all subnets for customer 2
 
 ## Running
 
