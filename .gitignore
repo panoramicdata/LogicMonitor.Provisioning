@@ -351,3 +351,5 @@ appsettings.jsonc
 appsettings.*.jsonc
 +appsettings.example.jsonc
 *.xlsx
+
+launchSettings.json
