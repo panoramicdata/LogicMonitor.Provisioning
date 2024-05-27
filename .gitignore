@@ -353,3 +353,4 @@ appsettings.*.jsonc
 *.xlsx
 
 launchSettings.json
+googleSheets.json

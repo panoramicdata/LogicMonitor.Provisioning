@@ -2,12 +2,12 @@ namespace LogicMonitor.Provisioning.Extensions;
 
 internal static class NcalcExtensions
 {
-	internal static List<Property> Evaluate(this Dictionary<string, string> properties, Dictionary<string, object?> variableDictionary)
+	internal static List<SimpleProperty> Evaluate(this Dictionary<string, string> properties, Dictionary<string, object?> variableDictionary)
 	{
-		var newProperties = new List<Property>();
+		var newProperties = new List<SimpleProperty>();
 		foreach (var kvp in properties)
 		{
-			newProperties.Add(new Property
+			newProperties.Add(new SimpleProperty
 			{
 				Name = kvp.Key,
 				Value = kvp.Value.Evaluate(variableDictionary).ToString()
@@ -74,7 +74,7 @@ internal static class NcalcExtensions
 						{
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
-								netscanCreationDto.Ddr.ChangeName = (string)value;
+								netscanCreationDto.DiscoveredDeviceRule.ChangeName = (string)value;
 								break;
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
@@ -89,8 +89,8 @@ internal static class NcalcExtensions
 								var deviceGroup = (await logicMonitorClient
 									.GetDeviceGroupByFullPathAsync((string)value, cancellationToken)
 									.ConfigureAwait(false)) ?? throw new ConfigurationException($"No such device group '{value}'");
-								netscanCreationDto.Ddr.Assignment[0].DeviceGroupId = deviceGroup.Id;
-								netscanCreationDto.Ddr.Assignment[0].DeviceGroupName = deviceGroup.FullPath;
+								netscanCreationDto.DiscoveredDeviceRule.Assignment[0].DeviceGroupId = deviceGroup.Id;
+								netscanCreationDto.DiscoveredDeviceRule.Assignment[0].GroupName = deviceGroup.FullPath;
 								break;
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
@@ -102,7 +102,7 @@ internal static class NcalcExtensions
 						{
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
-								netscanCreationDto.Ddr.Assignment[0].Type = Enum.TryParse<NetscanAssignmentType>(
+								netscanCreationDto.DiscoveredDeviceRule.Assignment[0].Type = Enum.TryParse<NetscanAssignmentType>(
 									(string)value,
 									out var netscanAssignmentType
 								)
@@ -147,59 +147,43 @@ internal static class NcalcExtensions
 
 	private static void Prep(NetscanCreationDto netscanCreationDto)
 	{
-		if (netscanCreationDto.Credentials is null)
-		{
-			netscanCreationDto.Credentials = new();
-		}
+		netscanCreationDto.Credentials ??= new();
 
-		if (netscanCreationDto.Ddr is null)
-		{
-			netscanCreationDto.Ddr = new();
-		}
+		netscanCreationDto.DiscoveredDeviceRule ??= new();
 
-		if (netscanCreationDto.Ddr.Assignment is null)
+		if (netscanCreationDto.DiscoveredDeviceRule.Assignment is null)
 		{
-			netscanCreationDto.Ddr.Assignment = new List<NetscanAssignment>
-				{
-					new NetscanAssignment
-					{
+			netscanCreationDto.DiscoveredDeviceRule.Assignment =
+				[
+					new() {
 						DisableAlerting = false,
 						InclusionType = NetscanInclusionType.Include,
 						Query = string.Empty
 					}
-				};
+				];
 		}
 
-		if (netscanCreationDto.Schedule is null)
+		netscanCreationDto.Schedule ??= new NetscanSchedule
 		{
-			netscanCreationDto.Schedule = new NetscanSchedule
-			{
-				Notify = false,
-				Type = NetscanScheduleType.Manual,
-				Recipients = new(),
-				Cron = string.Empty,
-				TimeZone = "America/New_York"
-			};
-		}
+			Notify = false,
+			Type = NetscanScheduleType.Manual,
+			Recipients = [],
+			Cron = string.Empty,
+			TimeZone = "America/New_York"
+		};
 
-		if (netscanCreationDto.DuplicatesStrategy is null)
+		netscanCreationDto.DuplicatesStrategy ??= new NetscanDuplicatesStrategy
 		{
-			netscanCreationDto.DuplicatesStrategy = new NetscanDuplicatesStrategy
-			{
-				Type = NetscanExcludeDuplicatesStrategy.MatchingAnyMonitoredDevices,
-				Groups = new(),
-				Collectors = new()
-			};
-		}
+			Type = NetscanExcludeDuplicatesStrategy.MatchingAnyMonitoredDevices,
+			Groups = [],
+			Collectors = []
+		};
 
-		if (netscanCreationDto.Ports is null)
+		netscanCreationDto.Ports ??= new NetscanPorts
 		{
-			netscanCreationDto.Ports = new NetscanPorts
-			{
-				IsGlobalDefault = true,
-				Value = "21,22,23,25,53,69,80,81,110,123,135,143,389,443,445,631,993,1433,1521,3306,3389,5432,5672,6081,7199,8000,8080,8081,9100,10000,11211,27017"
-			};
-		}
+			IsGlobalDefault = true,
+			Value = "21,22,23,25,53,69,80,81,110,123,135,143,389,443,445,631,993,1433,1521,3306,3389,5432,5672,6081,7199,8000,8080,8081,9100,10000,11211,27017"
+		};
 	}
 
 	internal static bool TryEvaluate<T>(

@@ -15,10 +15,10 @@ public class ItemSpec
 	/// <summary>
 	/// Used for fields.  Each is evaluated.
 	/// </summary>
-	public Dictionary<string, string> Fields { get; set; } = new();
+	public Dictionary<string, string> Fields { get; set; } = [];
 
 	/// <summary>
 	/// Used for properties.  Each is evaluated.
 	/// </summary>
-	public Dictionary<string, string> Properties { get; set; } = new();
+	public Dictionary<string, string> Properties { get; set; } = [];
 }

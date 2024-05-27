@@ -25,12 +25,12 @@ public class Structure<TGroup, TItem>
 	/// <summary>
 	/// Any subgroups to create (default: empty list)
 	/// </summary>
-	public List<Structure<TGroup, TItem>> Groups { get; set; } = new();
+	public List<Structure<TGroup, TItem>> Groups { get; set; } = [];
 
 	/// <summary>
 	/// Any items to create (default: empty list)
 	/// </summary>
-	public List<ItemSpec> Items { get; set; } = new();
+	public List<ItemSpec> Items { get; set; } = [];
 
 	/// <summary>
 	/// Where relevant: the appliesTo (default: null)
@@ -46,5 +46,5 @@ public class Structure<TGroup, TItem>
 	/// <summary>
 	/// The properties to set
 	/// </summary>
-	public Dictionary<string, string> Properties { get; set; } = new();
+	public Dictionary<string, string> Properties { get; set; } = [];
 }
