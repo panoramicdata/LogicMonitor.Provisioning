@@ -142,7 +142,7 @@
         {
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2A9A8C5906454057A8BB82E25D5EAAA4"
             {
-            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net60\\win-x64\\LogicMonitor.Provisioning.runtimeconfig.json"
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net80\\win-x64\\LogicMonitor.Provisioning.runtimeconfig.json"
             "TargetName" = "8:LogicMonitor.Provisioning.runtimeconfig.json"
             "Tag" = "8:"
             "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
@@ -162,7 +162,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_351D54C0ECDB4A90AA5A6B4F485734FF"
             {
-            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net60\\win-x64\\LogicMonitor.Provisioning.exe"
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net80\\win-x64\\LogicMonitor.Provisioning.exe"
             "TargetName" = "8:LogicMonitor.Provisioning.exe"
             "Tag" = "8:"
             "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
@@ -202,7 +202,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D07DB708530F4F719F8A1C14969315E1"
             {
-            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net60\\win-x64\\LogicMonitor.Provisioning.deps.json"
+            "SourcePath" = "8:..\\LogicMonitor.Provisioning\\bin\\Release\\net80\\win-x64\\LogicMonitor.Provisioning.deps.json"
             "TargetName" = "8:LogicMonitor.Provisioning.deps.json"
             "Tag" = "8:"
             "Folder" = "8:_3C8F24AD6B964D01BD489D6CD5112288"
