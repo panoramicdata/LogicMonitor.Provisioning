@@ -1,3 +1,4 @@
+using LogicMonitor.Provisioning.GoogleSheets;
 using PanoramicData.SheetMagic.Exceptions;
 
 namespace LogicMonitor.Provisioning;
@@ -107,7 +108,7 @@ internal class Application : IHostedService
 
 				_logger.LogInformation(LogEvents.ModeStart, "Mode start: {mode}", mode);
 
-				var repetitionItems = GetRepetitionItems(repetition, variables);
+				var repetitionItems = await GetRepetitionItemsAsync(repetition, variables, cancellationToken);
 				foreach (var repetitionItem in repetitionItems)
 				{
 					// Skip this row if the IsEnabled cell is set and
@@ -138,9 +139,10 @@ internal class Application : IHostedService
 		}
 	}
 
-	private static List<Dictionary<string, object?>> GetRepetitionItems(
+	private static async Task<List<Dictionary<string, object?>>> GetRepetitionItemsAsync(
 		Repetition repetition,
-		Dictionary<string, object?> variables)
+		Dictionary<string, object?> variables,
+		CancellationToken cancellationToken)
 	{
 		switch (repetition.Type)
 		{
@@ -157,33 +159,44 @@ internal class Application : IHostedService
 					variables
 				];
 			case RepetitionType.Xlsx:
+			case RepetitionType.GoogleDriveXlsx:
 				{
 					// Try to parse the configuration
 					var evaluatedConfig = repetition.Config.Evaluate<string>(variables);
-					var fileAndSheetInfo = new FileAndSheetInfo(evaluatedConfig ?? throw new ConfigurationException("XLSx configuration should evaluate to a string."));
-
-					using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
-					magicSpreadsheet.Load();
-					var sheetExtendedObjects = magicSpreadsheet.GetExtendedList<object>(fileAndSheetInfo.SheetName);
-					var repetitionItems = new List<Dictionary<string, object?>>();
-					foreach (var sheetExtendedObject in sheetExtendedObjects)
+					var tempFileInfo = new FileInfo(Path.GetTempFileName() + ".xlsx");
+					try
 					{
-						// Construct a dictionary based on the provided variables, plus the spreadsheet items
-						var itemDictionary = new Dictionary<string, object?>();
-						foreach (var kvp in variables)
+						var fileAndSheetInfo = repetition.Type == RepetitionType.Xlsx
+							? new FileAndSheetInfo(evaluatedConfig ?? throw new ConfigurationException("XLSx configuration should evaluate to a string."))
+							: await new GoogleFileDownloader(evaluatedConfig).DownloadAsync(tempFileInfo, cancellationToken);
+
+						using var magicSpreadsheet = new MagicSpreadsheet(fileAndSheetInfo.FileInfo);
+						magicSpreadsheet.Load();
+						var sheetExtendedObjects = magicSpreadsheet.GetExtendedList<object>(fileAndSheetInfo.SheetName);
+						var repetitionItems = new List<Dictionary<string, object?>>();
+						foreach (var sheetExtendedObject in sheetExtendedObjects)
 						{
-							itemDictionary[kvp.Key] = kvp.Value;
+							// Construct a dictionary based on the provided variables, plus the spreadsheet items
+							var itemDictionary = new Dictionary<string, object?>();
+							foreach (var kvp in variables)
+							{
+								itemDictionary[kvp.Key] = kvp.Value;
+							}
+
+							foreach (var kvp in sheetExtendedObject.Properties)
+							{
+								itemDictionary[kvp.Key.ToPascalCase()] = kvp.Value;
+							}
+
+							repetitionItems.Add(itemDictionary);
 						}
 
-						foreach (var kvp in sheetExtendedObject.Properties)
-						{
-							itemDictionary[kvp.Key.ToPascalCase()] = kvp.Value;
-						}
-
-						repetitionItems.Add(itemDictionary);
+						return repetitionItems;
 					}
-
-					return repetitionItems;
+					finally
+					{
+						tempFileInfo.Delete();
+					}
 				}
 			default:
 				throw new NotSupportedException($"Unsupported repetition type: '{repetition.Type}'");

@@ -13,8 +13,8 @@ Most users will find it easiest to just install the tool and run it.  To do so:
 3.  Press [Windows] and type "LogicMonitor P"
 4.  Select "LogicMonitor Provisioning Folder"
 5.  Follow the configuration instructions below
-3.  Press [Windows] and type "LogicMonitor P"
-4.  Select "LogicMonitor Provisioning"
+6.  Press [Windows] and type "LogicMonitor P"
+7.  Select "LogicMonitor Provisioning"
 
 ## Developers
 
@@ -32,10 +32,12 @@ To create the installer:
 
 ## Configuration
 
-1.	Copy the appsettings.example.json to appsettings.json in the same folder
-2.	Copy the data.example.xlsx to data.xlsx in the same folder
-3.	Ensure that all tables in the XLSX file are formatted as tables.
-4.	Edit the files as follows:
+1.  Copy the appsettings.example.json to appsettings.json in the same folder
+2.  Either
+    - Copy the data.example.xlsx to data.xlsx in the same folder and use the Xlsx repetition type OR
+    - Copy the data.example.xlsx to Google drive, ensuring that the Application is authorized to access the file
+3.  Ensure that all tables in the XLSX file are formatted as tables.
+4.  Edit the files as follows:
 
 ### appsettings.json
 
@@ -44,18 +46,20 @@ To create the installer:
 To complete this, you will need to [create a LogicMonitor API Token](https://www.logicmonitor.com/support/settings/users-and-roles/api-tokens).
 
 Configure your logicMonitor credentials as follows:
-*  Account: this is the first part of your LogicMonitor URL. For example, 'acme' in https://acme.logicmonitor.com/.
-*  AccessId: Add 
-*  AccessKey: Add (You won't be able to view in LogicMonitor once the API key is saved)
+-  Account: this is the first part of your LogicMonitor URL. For example, 'acme' in https://acme.logicmonitor.com/.
+-  AccessId: Add 
+-  AccessKey: Add (You won't be able to view in LogicMonitor once the API key is saved)
 
 #### Variables
 These are tokens that can be repeated later on in your configuration.  Optional.
 
 #### Repetition
 The entire configuration can be applied multiple times.
-*  Type 'None': No repetition. 
-*  Type 'Xlsx': Repeat the config for each row in the sheet specified in Config.
-*  Config: for Xlsx repetition type, set this to &lt;import file path&gt;|&lt;sheet name&gt;  The config will be applied to all rows in the single talbe on that sheet.
+-  Type 'None': No repetition. 
+-  Type 'Xlsx' or 'GoogleDriveXlsx': Repeat the config for each row in the sheet specified in Config.
+-  Config:
+   -  Xlsx repetition type, set this to &lt;import file path&gt;|&lt;sheet name&gt;  The config will be applied to all rows in the single table on that sheet.
+   -  GoogleDriveXlsx repetition type, set this to &lt;import file id&gt;|&lt;sheet name&gt;  The config will be applied to all rows in the single table on that sheet.
 
 #### Collectors
 The specification of the Collector Group to create/delete.

@@ -11,10 +11,8 @@
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	</PropertyGroup>
 	<ItemGroup>
-		<None Remove="appsettings.example.jsonc" />
 		<None Remove="appsettings.volvo.jsonc" />
 		<None Remove="data.example.xlsx" />
-		<None Remove="googleSheets.example.json" />
 		<None Remove="googleSheets.json" />
 		<None Remove="appsettings.volvo.jsonc" />
 	</ItemGroup>
@@ -25,6 +23,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="FluentValidation" Version="11.9.1" />
+		<PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3428" />
 		<PackageReference Include="Google.Apis.Sheets.v4" Version="1.68.0.3421" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
