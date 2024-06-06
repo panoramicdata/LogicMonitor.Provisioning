@@ -30,6 +30,53 @@ To create the installer:
 2.  Build the LogicMonitor.Provisioning.Setup project in the "Release" configuration
 3.  This will create an MSI file in the LogicMonitor.Provisioning.Setup/Release folder
 
+## Google Drive
+
+Sure, here are the instructions formatted in Markdown:
+
+# Instructions to Create a Google Cloud Client ID for Desktop (OAuth 2.0)
+
+Follow these steps to create a Google Cloud Client ID for a desktop application called "LogicMonitor Provisioner" with full read access to Google Drive.
+
+1. **Go to the Google Cloud Console:**
+   - Open your web browser and go to [Google Cloud Console](https://console.cloud.google.com/).
+
+2. **Create a New Project:**
+   - In the top-left corner, click on the project dropdown and select "New Project".
+   - Enter a project name (e.g., "LogicMonitor Provisioner Project") and select your organization if applicable.
+   - Click "Create".
+
+3. **Enable APIs and Services:**
+   - In the left-hand navigation menu, click on "APIs & Services" > "Library".
+   - In the search bar, type "Google Drive API" and select it from the list.
+   - Click "Enable" to enable the API for your project.
+
+4. **Create OAuth Consent Screen:**
+   - In the left-hand menu, click on "OAuth consent screen".
+   - Select "External" and click "Create".
+   - Fill in the required fields such as "App name" (e.g., "LogicMonitor Provisioner"), "User support email", and "Developer contact information".
+   - Click "Save and Continue".
+   - Add scopes by clicking on "Add or Remove Scopes" and select the following scope:
+     - `../auth/drive.readonly` - Full read access to the user's Google Drive.
+   - Click "Save and Continue".
+   - Add test users (your email address or any other test user email addresses).
+   - Click "Save and Continue", and then "Back to Dashboard".
+
+5. **Create OAuth 2.0 Client ID:**
+   - In the left-hand menu, click on "Credentials".
+   - Click "Create Credentials" and select "OAuth 2.0 Client ID".
+   - Choose "Desktop app" as the application type.
+   - Enter a name for your client ID (e.g., "LogicMonitor Provisioner").
+   - Click "Create".
+   - A dialog will appear with your Client ID and Client Secret. Note these down securely.
+
+6. **Download JSON File:**
+   - In the Credentials page, find your newly created OAuth 2.0 Client ID.
+   - Click on the download icon (downward arrow) to download the JSON file.
+   - Provide this JSON file to the application that requires it for OAuth 2.0 authentication.
+
+Your client has now created a Google Cloud Client ID for a desktop application, which can be used to gain read access to their Google Drive files using OAuth 2.0.
+
 ## Configuration
 
 1.  Copy the appsettings.example.json to appsettings.json in the same folder
