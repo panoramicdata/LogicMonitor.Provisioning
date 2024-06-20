@@ -88,6 +88,11 @@ internal class Application : IHostedService
 
 			while (true)
 			{
+				if (cancellationToken.IsCancellationRequested)
+				{
+					return;
+				}
+
 				while (mode == Mode.Menu)
 				{
 					Console.WriteLine("____________");
@@ -95,9 +100,12 @@ internal class Application : IHostedService
 					Console.WriteLine();
 					Console.WriteLine("(C)reate");
 					Console.WriteLine("(D)elete");
-					Console.WriteLine("Ctrl+C: Exit");
+					Console.WriteLine("Ctrl+C: Cancel / Exit");
 					Console.WriteLine("____________");
-					var modeInput = Console.ReadKey(true);
+
+					// Asynchronously read a console key, exiting if the cancellation token is triggered
+
+					var modeInput = await ConsoleExtensions.ReadKeyAsync(cancellationToken);
 					mode = modeInput.Key switch
 					{
 						ConsoleKey.C => Mode.Create,
@@ -132,6 +140,10 @@ internal class Application : IHostedService
 
 				mode = Mode.Menu;
 			}
+		}
+		catch (TaskCanceledException)
+		{
+			_logger.LogInformation(LogEvents.UserCancellation, "User cancelled.");
 		}
 		catch (Exception ex)
 		{
@@ -232,7 +244,7 @@ internal class Application : IHostedService
 				if (_config.Resources.Parent is not null)
 				{
 					var resourceGroupFullPath = _config.Resources.Parent.Evaluate<string>(variables) ?? throw new ConfigurationException("Parent resource group should evaluate to a string.");
-					await _logicMonitorClient
+					parentDeviceGroup = await _logicMonitorClient
 						.GetDeviceGroupByFullPathAsync(resourceGroupFullPath, cancellationToken)
 						.ConfigureAwait(false);
 				}
@@ -391,6 +403,10 @@ internal class Application : IHostedService
 
 			_logger.LogInformation("Complete.");
 		}
+		catch (TaskCanceledException e)
+		{
+			_logger.LogInformation(LogEvents.UserCancellation, e, "User cancelled.");
+		}
 		catch (Exception e)
 		{
 			_logger.LogError(LogEvents.GeneralFailure, e, "Failed due to '{Message}'", e.Message);
@@ -521,11 +537,14 @@ internal class Application : IHostedService
 	{
 		if (!structure.Condition.Evaluate<bool>(variables))
 		{
-			logger.LogInformation(LogEvents.GroupProcessingDisabled, "Not processing {groupType}, as they are disabled.", typeof(TGroup));
+			logger.LogInformation(LogEvents.GroupProcessingDisabled, "Not processing {GroupType}, as they are disabled.", typeof(TGroup).Name);
 			return;
 		}
 		// Structure is enabled
-		logger.LogInformation(LogEvents.GroupProcessingEnabled, "Processing {groupType}...", typeof(TGroup));
+
+		var structureName = structure.Name.Evaluate(variables);
+
+		logger.LogInformation(LogEvents.GroupProcessingEnabled, "Processing {GroupType}... {Name}", typeof(TGroup).Name, structureName);
 
 		// Determine the properties to set
 		var properties = structure.Properties;
@@ -534,7 +553,7 @@ internal class Application : IHostedService
 		// Filter on the group name
 		var filterItems = new List<FilterItem<TGroup>>
 			{
-				new Eq<TGroup>(nameof(NamedEntity.Name), structure.Name.Evaluate(variables))
+				new Eq<TGroup>(nameof(NamedEntity.Name), structureName)
 			};
 		// For hierarchical groups, also filter on the parent id
 		switch (typeof(TGroup).Name)
@@ -736,7 +755,8 @@ internal class Application : IHostedService
 									// Create netscan groups from spreadsheet
 									var objectList = magicSpreadsheet
 										.GetExtendedList<object>(fileAndSheetInfo.SheetName);
-									var netscanCreationDtos = await objectList.Where(obj => !obj.Properties.Any(p => p.Key == "Include" && p.Value is bool include && !include))
+									var netscanCreationDtos = await objectList
+										.Where(obj => !obj.Properties.Any(p => p.Key == "Include" && p.Value is bool include && !include))
 										.EvaluateAsync<NetscanCreationDto>(
 											itemSpec,
 											logicMonitorClient,
@@ -748,6 +768,11 @@ internal class Application : IHostedService
 									{
 										try
 										{
+											logger.LogInformation(
+												"Creating {Type} {Name}...",
+												typeof(Netscan),
+												netscanCreationDto.Name);
+
 											// Delete any existing
 											var existingNetscans = await logicMonitorClient.GetAllAsync(
 												new Filter<Netscan>
@@ -765,14 +790,20 @@ internal class Application : IHostedService
 													.ConfigureAwait(false);
 											}
 											// Create the new one
-											netscanCreationDto.CollectorId = ((int)(double.Parse(netscanCreationDto.CollectorId))).ToString();
+											if (string.IsNullOrEmpty(netscanCreationDto.CollectorId) || !int.TryParse(netscanCreationDto.CollectorId, out var netscanCollectorId))
+											{
+												logger.LogWarning("Netscan collector id was '{CollectorId}'.  Skipping.", netscanCreationDto.CollectorId);
+												continue;
+											}
+
+											netscanCreationDto.CollectorId = netscanCollectorId.ToString();
 											netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
 											await logicMonitorClient.CreateAsync(netscanCreationDto, cancellationToken)
 												.ConfigureAwait(false);
 										}
 										catch (Exception ex)
 										{
-											logger.LogError(ex, "Could not create {type} due to {message}", typeof(TItem), ex.Message);
+											logger.LogError(ex, "Could not create {Type} due to {Message}", typeof(TItem), ex.Message);
 										}
 									}
 
@@ -972,6 +1003,8 @@ internal class Application : IHostedService
 			throw new InvalidOperationException("Task is already running.");
 		}
 
+		_logger.LogInformation("Starting...");
+
 		TokenSource = new CancellationTokenSource();
 		Task = RunAsync(TokenSource.Token);
 		return Task.CompletedTask;
@@ -983,6 +1016,8 @@ internal class Application : IHostedService
 		{
 			throw new InvalidOperationException("Task is not running.");
 		}
+
+		_logger.LogInformation("Stopping...");
 
 		TokenSource.Cancel();
 		await Task.ConfigureAwait(false);

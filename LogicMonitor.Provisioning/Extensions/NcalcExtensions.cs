@@ -114,6 +114,19 @@ internal static class NcalcExtensions
 						}
 
 						break;
+					case "SubnetScanRange":
+						switch (item)
+						{
+							case NetscanCreationDto netscanCreationDto:
+								Prep(netscanCreationDto);
+								var ipRangeString = (string)value;
+								netscanCreationDto.SubnetScanRange = ipRangeString.Contains('/') ? GetIpRangeFromCidr(ipRangeString) : ipRangeString;
+								break;
+							default:
+								throw new NotSupportedException($"SubnetScanRange can only be set on a {nameof(NetscanCreationDto)}");
+						}
+
+						break;
 					default:
 						var propertyInfo = tOutPropertyInfos.SingleOrDefault(pi => pi.Name == propertyName)
 							?? throw new ConfigurationException($"Could not find configured property {typeName}.{propertyName}");
@@ -139,11 +152,56 @@ internal static class NcalcExtensions
 				}
 			}
 
+			if (item is NetscanCreationDto netscanCreationDto2)
+			{
+				if (netscanCreationDto2.Schedule.Type == NetscanScheduleType.Unknown)
+				{
+					netscanCreationDto2.Schedule.Type = NetscanScheduleType.Manual;
+				}
+			}
+
 			list.Add(item);
 		}
 
 		return list;
 	}
+
+	/// <summary>
+	/// Takes input in the form of a CIDR and returns the IP range
+	/// Example: 10.38.1.0/24 converts to 10.38.1.1-10.38.1.254
+	/// </summary>
+	/// <param name="value"></param>
+	/// <returns></returns>
+	private static string GetIpRangeFromCidr(string cidr)
+	{
+		var parts = cidr.Split('/');
+		if (parts.Length != 2)
+		{
+			throw new ConfigurationException($"Invalid CIDR {cidr}");
+		}
+
+		var ip = parts[0];
+		var maskBits = int.Parse(parts[1]);
+		var ipParts = ip.Split('.');
+		if (ipParts.Length != 4)
+		{
+			throw new ConfigurationException($"Invalid IP {ip}");
+		}
+
+		var ipnum = (Convert.ToUInt32(ipParts[0]) << 24) |
+			(Convert.ToUInt32(ipParts[1]) << 16) |
+			(Convert.ToUInt32(ipParts[2]) << 8) |
+			Convert.ToUInt32(ipParts[3]);
+
+		var maskUint = 0xffffffff << (32 - maskBits);
+
+		var startIp = (ipnum & maskUint) + 1;
+		var endIp = (ipnum | (maskUint ^ 0xffffffff)) - 1;
+
+		return $"{ToIp(startIp)}-{ToIp(endIp)}";
+	}
+
+	private static string ToIp(uint ip) => $"{ip >> 24}.{(ip >> 16) & 0xff}.{(ip >> 8) & 0xff}.{ip & 0xff}";
 
 	private static void Prep(NetscanCreationDto netscanCreationDto)
 	{

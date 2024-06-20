@@ -4,11 +4,12 @@
 		<TargetFramework>net80</TargetFramework>
 		<LangVersion>latest</LangVersion>
 		<Company>Panoramic Data Limited</Company>
-		<Copyright>Panoramic Data Limited 2021</Copyright>
+		<Copyright>Panoramic Data Limited 2021 - 2024</Copyright>
 		<Nullable>enable</Nullable>
 		<ApplicationIcon>Icon.ico</ApplicationIcon>
 		<SelfContained>true</SelfContained>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<AnalysisLevel>latest</AnalysisLevel>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="appsettings.volvo.jsonc" />
@@ -22,30 +23,24 @@
 		<Content Include="googleSheets.json" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="FluentValidation" Version="11.9.1" />
+		<PackageReference Include="FluentValidation" Version="11.9.2" />
 		<PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3428" />
 		<PackageReference Include="Google.Apis.Sheets.v4" Version="1.68.0.3421" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+		<PackageReference Include="Serilog" Version="4.0.0" />
+		<PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+		<PackageReference Include="Serilog.Settings.Configuration" Version="8.0.1" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
 		<PackageReference Include="LogicMonitor.Api" Version="3.204.3" />
-		<PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.6.139">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="PanoramicData.NCalcExtensions" Version="1.20.146" />
 		<PackageReference Include="PanoramicData.SheetMagic" Version="3.0.101" />
-		<PackageReference Include="Roslynator.Analyzers" Version="4.12.3">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Roslynator.CodeFixes" Version="4.12.3">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
 	</ItemGroup>
 	<ItemGroup>
 		<None Update="appsettings.json">

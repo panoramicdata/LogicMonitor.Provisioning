@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace LogicMonitor.Provisioning.Config;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace LogicMonitor.Provisioning.Config;
 /// </summary>
 /// <typeparam name="TGroup">The group type</typeparam>
 /// <typeparam name="TItem">The item type</typeparam>
+[DebuggerDisplay("{Name}")]
 public class Structure<TGroup, TItem>
 {
 	/// <summary>
