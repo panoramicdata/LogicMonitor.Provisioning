@@ -766,44 +766,59 @@ internal class Application : IHostedService
 
 									foreach (var netscanCreationDto in netscanCreationDtos)
 									{
+										logger.LogInformation(
+											"Processing {Type} '{Name}'...",
+											typeof(TItem).Name,
+											netscanCreationDto.Name);
+
+										// Create the new one
+										if (string.IsNullOrEmpty(netscanCreationDto.CollectorId) || !int.TryParse(netscanCreationDto.CollectorId, out var netscanCollectorId))
+										{
+											logger.LogWarning(
+												"- Netscan collector id was '{CollectorId}'.  Skipping.",
+												netscanCreationDto.CollectorId);
+											continue;
+										}
+
 										try
 										{
-											logger.LogInformation(
-												"Creating {Type} {Name}...",
-												typeof(Netscan),
-												netscanCreationDto.Name);
+											// Fix up input data
+											netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
+											netscanCreationDto.CollectorId = netscanCollectorId.ToString();
 
-											// Delete any existing
+											// Find any existing
 											var existingNetscans = await logicMonitorClient.GetAllAsync(
 												new Filter<Netscan>
 												{
 													FilterItems = [
-													new Eq<Netscan>(nameof(Netscan.GroupId), netscanCreationDto.GroupId),
-													new Eq<Netscan>(nameof(Netscan.Name), netscanCreationDto.Name),
+														new Eq<Netscan>(nameof(Netscan.GroupId), netscanCreationDto.GroupId),
+														new Eq<Netscan>(nameof(Netscan.Name), netscanCreationDto.Name),
 													]
 												},
 												cancellationToken)
 												.ConfigureAwait(false);
-											if (existingNetscans.Count == 1)
+
+											// Delete any existing
+											foreach (var existingNetscan in existingNetscans)
 											{
-												await logicMonitorClient.DeleteAsync(existingNetscans[0], cancellationToken: cancellationToken)
+												logger.LogInformation("- Deleting existing Id={Id}...", existingNetscan.Id);
+												await logicMonitorClient
+													.DeleteAsync<Netscan>(existingNetscans[0].Id, cancellationToken)
 													.ConfigureAwait(false);
 											}
-											// Create the new one
-											if (string.IsNullOrEmpty(netscanCreationDto.CollectorId) || !int.TryParse(netscanCreationDto.CollectorId, out var netscanCollectorId))
-											{
-												logger.LogWarning("Netscan collector id was '{CollectorId}'.  Skipping.", netscanCreationDto.CollectorId);
-												continue;
-											}
 
-											netscanCreationDto.CollectorId = netscanCollectorId.ToString();
-											netscanCreationDto.Name = netscanCreationDto.Name.Replace("/", " ");
+											// Create new Netscan
+											logger.LogInformation("- Creating...");
 											await logicMonitorClient.CreateAsync(netscanCreationDto, cancellationToken)
 												.ConfigureAwait(false);
 										}
 										catch (Exception ex)
 										{
-											logger.LogError(ex, "Could not create {Type} due to {Message}", typeof(TItem), ex.Message);
+											logger.LogError(ex, "- Could not process {Type} due to {Message}", typeof(TItem).Name, ex.Message);
+										}
+										finally
+										{
+											logger.LogInformation("- Done.");
 										}
 									}
 
