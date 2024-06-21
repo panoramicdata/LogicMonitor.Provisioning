@@ -25,10 +25,6 @@ internal class ConfigurationException : Exception
 	{
 	}
 
-	protected ConfigurationException(SerializationInfo info, StreamingContext context) : base(info, context)
-	{
-	}
-
 	/// <summary>
 	/// The issues
 	/// </summary>

@@ -10,7 +10,7 @@ internal static class NcalcExtensions
 			newProperties.Add(new SimpleProperty
 			{
 				Name = kvp.Key,
-				Value = kvp.Value.Evaluate(variableDictionary).ToString()
+				Value = kvp.Value.Evaluate(variableDictionary)?.ToString() ?? string.Empty
 			});
 		}
 

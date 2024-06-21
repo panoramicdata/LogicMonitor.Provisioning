@@ -436,7 +436,7 @@ internal class Application : IHostedService
 						{
 							FilterItems =
 							[
-									new Eq<Role>(nameof(Role.Name), roleName),
+									new Eq<Role>(nameof(Role.Name), roleName ?? string.Empty),
 									new Eq<Role>(nameof(Role.RoleGroupId), roleGroupId),
 							]
 						}, cancellationToken
@@ -832,7 +832,7 @@ internal class Application : IHostedService
 				}
 			}
 		}
-		catch (EmptyRowException e)
+		catch (EmptyRowException)
 		{
 			throw new Exception("One of the tables in use has empty rows or has not been correctly formatted a table in Excel.");
 		}
@@ -916,7 +916,7 @@ internal class Application : IHostedService
 			_ => throw new NotSupportedException($"Creating {groupTypeName}s not supported."),
 		};
 		return await portalClient
-			.CreateAsync(creationDto, cancellationToken)
+			.CreateAsync(creationDto ?? throw new InvalidOperationException($"Could not create CreationDto<{typeof(TItem).Name}>"), cancellationToken)
 			.ConfigureAwait(false);
 	}
 
