@@ -1,5 +1,10 @@
 # LogicMonitor.Provisioning
 
+Important: recent breaking change: you may need to update you configuration to update (case-sensitively):
+- all instances of the word "device" to the word "resource"
+- all instances of the word "Device" to the word "Resource"
+If you are new to the tool, you can ignore this!
+
 ## Introduction
 
 This is a command line application for provisioning
