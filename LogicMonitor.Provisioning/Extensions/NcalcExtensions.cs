@@ -1,5 +1,3 @@
-using LogicMonitor.Api.Resources;
-
 namespace LogicMonitor.Provisioning.Extensions;
 
 internal static class NcalcExtensions
@@ -57,7 +55,7 @@ internal static class NcalcExtensions
 
 				switch (propertyName)
 				{
-					case "Credentials.DeviceGroupId":
+					case "Credentials.ResourceGroupId":
 						switch (item)
 						{
 							case NetscanCreationDto netscanCreationDto:
@@ -67,7 +65,7 @@ internal static class NcalcExtensions
 								netscanCreationDto.Credentials.ResourceGroupName = (await logicMonitorClient.GetAsync<ResourceGroup>((int)value, cancellationToken).ConfigureAwait(false)).FullPath;
 								break;
 							default:
-								throw new NotSupportedException($"Credentials.DeviceGroupId can only be set on a {nameof(NetscanCreationDto)}");
+								throw new NotSupportedException($"Credentials.ResourceGroupId can only be set on a {nameof(NetscanCreationDto)}");
 						}
 
 						break;
@@ -93,12 +91,12 @@ internal static class NcalcExtensions
 									throw new ConfigurationException("DiscoveredResourceRule.Assignment is null");
 								}
 
-								var deviceGroup = (await logicMonitorClient
+								var resourceGroup = (await logicMonitorClient
 									.GetResourceGroupByFullPathAsync((string)value, cancellationToken)
-									.ConfigureAwait(false)) ?? throw new ConfigurationException($"No such device group '{value}'");
+									.ConfigureAwait(false)) ?? throw new ConfigurationException($"No such resource group '{value}'");
 
-								netscanCreationDto.DiscoveredResourceRule.Assignment[0].ResourceGroupId = deviceGroup.Id;
-								netscanCreationDto.DiscoveredResourceRule.Assignment[0].GroupName = deviceGroup.FullPath;
+								netscanCreationDto.DiscoveredResourceRule.Assignment[0].ResourceGroupId = resourceGroup.Id;
+								netscanCreationDto.DiscoveredResourceRule.Assignment[0].GroupName = resourceGroup.FullPath;
 								break;
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");

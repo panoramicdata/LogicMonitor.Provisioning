@@ -107,7 +107,7 @@
 					"Description": "Name + ' imports'"
 				}
 			],
-			"ImportItemsFrom": "importFilePath + ':Devices'",
+			"ImportItemsFrom": "importFilePath + ':Resources'",
 			"Properties": {
 				"snmp.version": "SnmpVersion",
 				"snmp.security": "SnmpSecurity",
@@ -141,9 +141,9 @@
 						"CollectorId": "'' + CollectorId",
 						"SubnetScanRange": "VlanSubnet",
 						"ExcludedIpAddresses": "''",
-						"Credentials.DeviceGroupId": "deviceGroupId",
+						"Credentials.ResourceGroupId": "resourceGroupId",
 						"Ddr.ChangeName": "'##REVERSEDNS##'",
-						"Ddr.Assignment[0].DeviceGroupName": "'Sites/' + Name + '/Z - Imports'",
+						"Ddr.Assignment[0].ResourceGroupName": "'Sites/' + Name + '/Z - Imports'",
 						"Ddr.Assignment[0].Type": "'All'"
 					}
 				}

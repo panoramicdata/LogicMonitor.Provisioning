@@ -1,4 +1,3 @@
-using LogicMonitor.Api.Resources;
 using LogicMonitor.Provisioning.GoogleSheets;
 using PanoramicData.SheetMagic.Exceptions;
 
@@ -238,14 +237,14 @@ internal class Application : IHostedService
 					.ConfigureAwait(false);
 			}
 
-			// Devices
+			// Resources
 			if (_config.Resources is not null)
 			{
-				ResourceGroup? parentDeviceGroup = null;
+				ResourceGroup? parentResourceGroup = null;
 				if (_config.Resources.Parent is not null)
 				{
 					var resourceGroupFullPath = _config.Resources.Parent.Evaluate<string>(variables) ?? throw new ConfigurationException("Parent resource group should evaluate to a string.");
-					parentDeviceGroup = await _logicMonitorClient
+					parentResourceGroup = await _logicMonitorClient
 						.GetResourceGroupByFullPathAsync(resourceGroupFullPath, cancellationToken)
 						.ConfigureAwait(false);
 				}
@@ -255,8 +254,8 @@ internal class Application : IHostedService
 					mode,
 					_config.Resources,
 					variables,
-					parentDeviceGroup,
-					"deviceGroupId",
+					parentResourceGroup,
+					"resourceGroupId",
 					_logger,
 					cancellationToken)
 					.ConfigureAwait(false);
@@ -474,7 +473,7 @@ internal class Application : IHostedService
 						{
 							new (
 								PrivilegeObjectType.ResourceGroup,
-								variables.TryGetValue("deviceGroupId", out var deviceGroupId) ? deviceGroupId?.ToString() : null,
+								variables.TryGetValue("resourceGroupId", out var resourceGroupId) ? resourceGroupId?.ToString() : null,
 								roleConfiguration.AccessLevel),
 							new (
 								PrivilegeObjectType.DashboardGroup,
@@ -953,7 +952,7 @@ internal class Application : IHostedService
 				},
 				cancellationToken)
 				.ConfigureAwait(false))?.Select(dashboardGroup => dashboardGroup.Id) ?? [],
-			ResourceGroup deviceGroup => deviceGroup.Resources?.Select(d => d.Id) ?? [],
+			ResourceGroup resourceGroup => resourceGroup.Resources?.Select(d => d.Id) ?? [],
 			NetscanGroup netscanGroup => (await logicMonitorClient
 				.GetAllAsync(new Filter<Netscan>
 				{
