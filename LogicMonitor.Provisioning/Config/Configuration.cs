@@ -1,3 +1,5 @@
+using LogicMonitor.Api.Resources;
+
 namespace LogicMonitor.Provisioning.Config;
 
 /// <summary>
@@ -44,7 +46,7 @@ internal class Configuration
 	/// <summary>
 	/// The Resource structure to apply
 	/// </summary>
-	public Structure<DeviceGroup, Device>? Resources { get; set; }
+	public Structure<ResourceGroup, Resource>? Resources { get; set; }
 
 	/// <summary>
 	/// The Website structure to apply

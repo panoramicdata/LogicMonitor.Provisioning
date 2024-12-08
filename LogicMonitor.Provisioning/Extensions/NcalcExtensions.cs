@@ -1,3 +1,5 @@
+using LogicMonitor.Api.Resources;
+
 namespace LogicMonitor.Provisioning.Extensions;
 
 internal static class NcalcExtensions
@@ -60,9 +62,9 @@ internal static class NcalcExtensions
 						{
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
-								netscanCreationDto.Credentials.DeviceGroupId = (int)value;
+								netscanCreationDto.Credentials.ResourceGroupId = (int)value;
 								netscanCreationDto.Credentials.Custom = new List<object>().ToArray();
-								netscanCreationDto.Credentials.DeviceGroupName = (await logicMonitorClient.GetAsync<DeviceGroup>((int)value, cancellationToken).ConfigureAwait(false)).FullPath;
+								netscanCreationDto.Credentials.ResourceGroupName = (await logicMonitorClient.GetAsync<ResourceGroup>((int)value, cancellationToken).ConfigureAwait(false)).FullPath;
 								break;
 							default:
 								throw new NotSupportedException($"Credentials.DeviceGroupId can only be set on a {nameof(NetscanCreationDto)}");
@@ -74,23 +76,29 @@ internal static class NcalcExtensions
 						{
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
-								netscanCreationDto.DiscoveredDeviceRule.ChangeName = (string)value;
+								netscanCreationDto.DiscoveredResourceRule.ChangeName = (string)value;
 								break;
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
 						}
 
 						break;
-					case "Ddr.Assignment[0].DeviceGroupName":
+					case "Ddr.Assignment[0].ResourceGroupName":
 						switch (item)
 						{
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
+								if (netscanCreationDto.DiscoveredResourceRule.Assignment is null)
+								{
+									throw new ConfigurationException("DiscoveredResourceRule.Assignment is null");
+								}
+
 								var deviceGroup = (await logicMonitorClient
-									.GetDeviceGroupByFullPathAsync((string)value, cancellationToken)
+									.GetResourceGroupByFullPathAsync((string)value, cancellationToken)
 									.ConfigureAwait(false)) ?? throw new ConfigurationException($"No such device group '{value}'");
-								netscanCreationDto.DiscoveredDeviceRule.Assignment[0].DeviceGroupId = deviceGroup.Id;
-								netscanCreationDto.DiscoveredDeviceRule.Assignment[0].GroupName = deviceGroup.FullPath;
+
+								netscanCreationDto.DiscoveredResourceRule.Assignment[0].ResourceGroupId = deviceGroup.Id;
+								netscanCreationDto.DiscoveredResourceRule.Assignment[0].GroupName = deviceGroup.FullPath;
 								break;
 							default:
 								throw new NotSupportedException($"Ddr.ChangeName can only be set on a {nameof(NetscanCreationDto)}");
@@ -102,7 +110,12 @@ internal static class NcalcExtensions
 						{
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
-								netscanCreationDto.DiscoveredDeviceRule.Assignment[0].Type = Enum.TryParse<NetscanAssignmentType>(
+								if (netscanCreationDto.DiscoveredResourceRule.Assignment is null)
+								{
+									throw new ConfigurationException("DiscoveredResourceRule.Assignment is null");
+								}
+
+								netscanCreationDto.DiscoveredResourceRule.Assignment[0].Type = Enum.TryParse<NetscanAssignmentType>(
 									(string)value,
 									out var netscanAssignmentType
 								)
@@ -120,7 +133,9 @@ internal static class NcalcExtensions
 							case NetscanCreationDto netscanCreationDto:
 								Prep(netscanCreationDto);
 								var ipRangeString = (string)value;
-								netscanCreationDto.SubnetScanRange = ipRangeString.Contains('/') ? GetIpRangeFromCidr(ipRangeString) : ipRangeString;
+								netscanCreationDto.SubnetScanRange = ipRangeString.Contains('/')
+									? GetIpRangeFromCidr(ipRangeString)
+									: ipRangeString;
 								break;
 							default:
 								throw new NotSupportedException($"SubnetScanRange can only be set on a {nameof(NetscanCreationDto)}");
@@ -207,11 +222,11 @@ internal static class NcalcExtensions
 	{
 		netscanCreationDto.Credentials ??= new();
 
-		netscanCreationDto.DiscoveredDeviceRule ??= new();
+		netscanCreationDto.DiscoveredResourceRule ??= new();
 
-		if (netscanCreationDto.DiscoveredDeviceRule.Assignment is null)
+		if (netscanCreationDto.DiscoveredResourceRule.Assignment is null)
 		{
-			netscanCreationDto.DiscoveredDeviceRule.Assignment =
+			netscanCreationDto.DiscoveredResourceRule.Assignment =
 				[
 					new() {
 						DisableAlerting = false,
@@ -232,7 +247,7 @@ internal static class NcalcExtensions
 
 		netscanCreationDto.DuplicatesStrategy ??= new NetscanDuplicatesStrategy
 		{
-			Type = NetscanExcludeDuplicatesStrategy.MatchingAnyMonitoredDevices,
+			Type = NetscanExcludeDuplicatesStrategy.MatchingAnyMonitoredResources,
 			Groups = [],
 			Collectors = []
 		};

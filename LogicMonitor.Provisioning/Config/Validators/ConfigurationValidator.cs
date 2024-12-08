@@ -1,3 +1,5 @@
+using LogicMonitor.Api.Resources;
+
 namespace LogicMonitor.Provisioning.Config.Validators;
 
 internal class ConfigurationValidator : AbstractValidator<Configuration>
@@ -10,7 +12,7 @@ internal class ConfigurationValidator : AbstractValidator<Configuration>
 
 		RuleFor(config => config.Collectors).SetValidator(new StructureValidator<CollectorGroup, Collector>());
 		RuleFor(config => config.Dashboards).SetValidator(new StructureValidator<DashboardGroup, Dashboard>());
-		RuleFor(config => config.Resources).SetValidator(new StructureValidator<DeviceGroup, Device>());
+		RuleFor(config => config.Resources).SetValidator(new StructureValidator<ResourceGroup, Resource>());
 		RuleFor(config => config.Mappings).SetValidator(new StructureValidator<TopologyGroup, Topology>());
 		RuleFor(config => config.Netscans).SetValidator(new StructureValidator<NetscanGroup, Netscan>());
 		RuleFor(config => config.Reports).SetValidator(new StructureValidator<ReportGroup, ReportBase>());

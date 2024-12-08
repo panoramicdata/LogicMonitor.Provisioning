@@ -1,3 +1,4 @@
+using LogicMonitor.Api.Resources;
 using LogicMonitor.Provisioning.GoogleSheets;
 using PanoramicData.SheetMagic.Exceptions;
 
@@ -240,12 +241,12 @@ internal class Application : IHostedService
 			// Devices
 			if (_config.Resources is not null)
 			{
-				DeviceGroup? parentDeviceGroup = null;
+				ResourceGroup? parentDeviceGroup = null;
 				if (_config.Resources.Parent is not null)
 				{
 					var resourceGroupFullPath = _config.Resources.Parent.Evaluate<string>(variables) ?? throw new ConfigurationException("Parent resource group should evaluate to a string.");
 					parentDeviceGroup = await _logicMonitorClient
-						.GetDeviceGroupByFullPathAsync(resourceGroupFullPath, cancellationToken)
+						.GetResourceGroupByFullPathAsync(resourceGroupFullPath, cancellationToken)
 						.ConfigureAwait(false);
 				}
 
@@ -428,7 +429,8 @@ internal class Application : IHostedService
 				foreach (var roleConfiguration in roleConfigurations.Where(rc => rc.Condition.Evaluate(variables) as bool? == true))
 				{
 					// Set up roles
-					var roleName = roleConfiguration.Name.Evaluate<string>(variables);
+					var roleName = roleConfiguration.Name.Evaluate<string>(variables)
+						?? throw new InvalidDataException($"Count not evaluate Role Name expression: {roleConfiguration.Name}");
 
 					// Remove any existing role
 					var existingRoles = await logicMonitorClient.GetAllAsync(
@@ -436,7 +438,7 @@ internal class Application : IHostedService
 						{
 							FilterItems =
 							[
-									new Eq<Role>(nameof(Role.Name), roleName ?? string.Empty),
+									new Eq<Role>(nameof(Role.Name), roleName),
 									new Eq<Role>(nameof(Role.RoleGroupId), roleGroupId),
 							]
 						}, cancellationToken
@@ -447,14 +449,23 @@ internal class Application : IHostedService
 							.ConfigureAwait(false);
 					}
 
+					var roleDescription = roleConfiguration.Description.Evaluate<string>(variables)
+						?? throw new InvalidDataException($"Count not evaluate Role Description expression: {roleConfiguration.Description}");
+
+					var roleCustomHelpLabel = roleConfiguration.CustomHelpLabel.Evaluate<string>(variables)
+						?? throw new InvalidDataException($"Count not evaluate Role CustomHelpLabel expression: {roleConfiguration.CustomHelpLabel}");
+
+					var roleCustomHelpUrl = roleConfiguration.CustomHelpUrl.Evaluate<string>(variables)
+						?? throw new InvalidDataException($"Count not evaluate Role CustomHelpUrl expression: {roleConfiguration.CustomHelpUrl}");
+
 					var roleCreationDto = new RoleCreationDto
 					{
 						RequireEULA = roleConfiguration.IsEulaRequired.Evaluate<bool>(variables),
 						TwoFactorAuthenticationRequired = roleConfiguration.IsTwoFactorAuthenticationRequired.Evaluate<bool>(variables),
 						Name = roleName,
-						Description = roleConfiguration.Description.Evaluate<string>(variables),
-						CustomHelpLabel = roleConfiguration.CustomHelpLabel.Evaluate<string>(variables),
-						CustomHelpUrl = roleConfiguration.CustomHelpUrl.Evaluate<string>(variables),
+						Description = roleDescription,
+						CustomHelpLabel = roleCustomHelpLabel,
+						CustomHelpUrl = roleCustomHelpUrl,
 						RoleGroupId = roleGroupId,
 						Privileges = [],
 					};
@@ -462,7 +473,7 @@ internal class Application : IHostedService
 					foreach (var x in new List<RoleSpec>
 						{
 							new (
-								PrivilegeObjectType.DeviceGroup,
+								PrivilegeObjectType.ResourceGroup,
 								variables.TryGetValue("deviceGroupId", out var deviceGroupId) ? deviceGroupId?.ToString() : null,
 								roleConfiguration.AccessLevel),
 							new (
@@ -561,8 +572,8 @@ internal class Application : IHostedService
 			case nameof(DashboardGroup):
 				filterItems.Add(new Eq<TGroup>(nameof(DashboardGroup.ParentId), parentGroup?.Id ?? 1));
 				break;
-			case nameof(DeviceGroup):
-				filterItems.Add(new Eq<TGroup>(nameof(DeviceGroup.ParentId), parentGroup?.Id ?? 1));
+			case nameof(ResourceGroup):
+				filterItems.Add(new Eq<TGroup>(nameof(ResourceGroup.ParentId), parentGroup?.Id ?? 1));
 				break;
 			case nameof(WebsiteGroup):
 				filterItems.Add(new Eq<TGroup>(nameof(WebsiteGroup.ParentId), parentGroup?.Id ?? 1));
@@ -865,7 +876,7 @@ internal class Application : IHostedService
 				Description = description,
 				CustomProperties = properties,
 			} as CreationDto<TGroup>,
-			nameof(DeviceGroup) => new DeviceGroupCreationDto
+			nameof(ResourceGroup) => new ResourceGroupCreationDto
 			{
 				ParentId = parentGroup?.Id.ToString() ?? "1",
 				Name = name,
@@ -942,7 +953,7 @@ internal class Application : IHostedService
 				},
 				cancellationToken)
 				.ConfigureAwait(false))?.Select(dashboardGroup => dashboardGroup.Id) ?? [],
-			DeviceGroup deviceGroup => deviceGroup.Devices?.Select(d => d.Id) ?? [],
+			ResourceGroup deviceGroup => deviceGroup.Resources?.Select(d => d.Id) ?? [],
 			NetscanGroup netscanGroup => (await logicMonitorClient
 				.GetAllAsync(new Filter<Netscan>
 				{
